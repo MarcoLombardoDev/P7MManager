@@ -190,12 +190,12 @@ billed per developer, per user or per installation.
 | Tier | Price | Scope |
 |---|---:|---|
 | **Community** | **Free** | Everything P7M Manager does, under AGPL-3.0. Unlimited internal use. |
-| **Commercial — Small** | **€600 / year** | 1–49 employees. Closed-source internal use, one legal entity. |
-| **Commercial — Medium** | **€1,200 / year** | 50–249 employees. Same model as Small. |
-| **Commercial — Large** | **€2,200 / year** | 250–999 employees. Same model as Small and Medium. |
-| **Commercial — Enterprise** | **from €3,800 / year** | 1,000+ employees, or a group-wide perimeter. Written answers to procurement and legal questionnaires. |
-| **Redistribution — Standard** | **€2,000 / year** | Ordinary commercial redistribution: embed it, or its engine, in a product you sell. |
-| **Redistribution — Enterprise** | **from €7,000 / year** | Large-scale redistribution and OEM programmes. Scope priced per case. |
+| **Commercial — Small** | **€900 / year** | 1–49 employees. Closed-source internal use, one legal entity. |
+| **Commercial — Medium** | **€1,800 / year** | 50–249 employees. Same model as Small. |
+| **Commercial — Large** | **€3,200 / year** | 250–999 employees. Same model as Small and Medium. |
+| **Commercial — Enterprise** | **from €5,500 / year** | 1,000+ employees, or a group-wide perimeter. Written answers to procurement and legal questionnaires. |
+| **Redistribution — Standard** | **€2,900 / year** | Ordinary commercial redistribution: embed it, or its engine, in a product you sell. |
+| **Redistribution — Enterprise** | **from €10,000 / year** | Large-scale redistribution and OEM programmes. Scope priced per case. |
 
 ### Perpetual option
 
@@ -208,10 +208,10 @@ four fixed-price tiers only — both Enterprise tiers are negotiated per case in
 
 | Tier | Perpetual price (one-off) |
 |---|---:|
-| Commercial — Small | **€1,800** |
-| Commercial — Medium | **€3,600** |
-| Commercial — Large | **€6,600** |
-| Redistribution — Standard | **€6,000** |
+| Commercial — Small | **€2,700** |
+| Commercial — Medium | **€5,400** |
+| Commercial — Large | **€9,600** |
+| Redistribution — Standard | **€8,700** |
 
 Support (§6) runs for **twelve months** from a perpetual purchase, and can be renewed
 afterwards at 20% of the annual rate of the same tier. The licence itself does not expire

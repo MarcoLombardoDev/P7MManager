@@ -21,6 +21,7 @@ from __future__ import annotations
 import logging
 import queue as queue_module
 from pathlib import Path
+from urllib.parse import quote
 
 from PySide6.QtCore import Qt, QTimer, QUrl
 from PySide6.QtGui import QAction, QActionGroup, QDesktopServices, QKeySequence
@@ -48,7 +49,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .. import APP_NAME, __version__
+from .. import APP_NAME, CONTACT_EMAIL, LICENSE_NOTICE, LICENSING_SUBJECT, __version__
 from ..core import report
 from ..core.extractor import Conflict, Destination, ExtractionSettings
 from ..core.jobs import DEFAULT_WORKERS, JobQueue, QueueEvent
@@ -166,7 +167,36 @@ class MainWindow(QMainWindow):
 
         outer.addWidget(self.splitter, 1)
         self.setCentralWidget(central)
+
         self.status = self.statusBar()
+        self.status.addPermanentWidget(self._licence_notice())
+
+    def _licence_notice(self) -> QLabel:
+        """The copyright and licence line, carried along the bottom of the window.
+
+        AGPL-3.0 section 5 asks the work to carry Appropriate Legal Notices,
+        and section 7(b) lets an author require that attribution be preserved.
+        Orion centres its own by hand; here the status bar's left side is
+        already busy with per-run messages, so the notice is a permanent
+        widget on the right, where nothing overwrites it.
+
+        The address is a link rather than plain text because the person
+        running the application is exactly the person who might need to buy a
+        commercial licence, and "available on request" tells them nothing
+        about where to ask.
+        """
+        link = (
+            f'<a href="mailto:{CONTACT_EMAIL}'
+            f'?subject={quote(LICENSING_SUBJECT)}">{CONTACT_EMAIL}</a>'
+        )
+        label = QLabel(f"{LICENSE_NOTICE} {link}", self)
+        label.setObjectName("licenceNotice")
+        label.setTextFormat(Qt.TextFormat.RichText)
+        # Opened through QDesktopServices rather than setOpenExternalLinks, so
+        # a machine with no mail client configured fails quietly instead of
+        # raising: the address stays readable on screen either way.
+        label.linkActivated.connect(lambda url: QDesktopServices.openUrl(QUrl(url)))
+        return label
 
     def _build_options(self, box: QGroupBox) -> None:
         grid = QGridLayout(box)
@@ -326,7 +356,9 @@ class MainWindow(QMainWindow):
     # translation
     # -----------------------------------------------------------------
     def _retranslate(self) -> None:
-        self.setWindowTitle(APP_NAME)
+        # Name and version in the title bar, so a screenshot in a bug report
+        # says which build it came from without anyone having to ask.
+        self.setWindowTitle(f"{APP_NAME} {__version__}")
         self.options_box.setTitle(tr("Options"))
         self.destination_label.setText(tr("Destination"))
         for index, text in enumerate(
@@ -680,25 +712,9 @@ class MainWindow(QMainWindow):
         self.status.showMessage(tr("Report saved to {path}").format(path=path), 8000)
 
     def _about(self) -> None:
-        # Built outside the f-string: nested quotes across lines are a syntax
-        # error before Python 3.12, and this project targets 3.10.
-        disclaimer = tr(
-            "This tool checks integrity and, for RSA, the signature itself. It is "
-            "not a legal validation: it has no trust list, does not check "
-            "revocation and does not validate timestamps against an authority."
-        )
-        licence = tr(
-            "Free software under AGPL-3.0-or-later; a commercial licence is "
-            "available."
-        )
-        summary = tr("Inspect signed .p7m containers and extract what they carry")
-        version = tr("Version {version}").format(version=__version__)
-        QMessageBox.about(
-            self,
-            tr("About P7M Manager"),
-            f"<h3>{APP_NAME}</h3><p>{summary}</p><p>{version}</p>"
-            f"<p>{disclaimer}</p><p><small>{licence}</small></p>",
-        )
+        from .dialogs import AboutDialog
+
+        AboutDialog(self).exec()
 
     # -----------------------------------------------------------------
     # drag and drop, closing

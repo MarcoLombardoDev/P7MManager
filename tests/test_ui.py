@@ -212,3 +212,51 @@ def test_human_size_uses_decimal_units():
     assert human_size(900) == "900 B"
     assert human_size(1707) == "1,7 kB"
     assert human_size(5_400_000) == "5,4 MB"
+
+
+def test_the_title_bar_names_the_tool_and_its_version(window):
+    from p7mmanager import APP_NAME, __version__
+
+    assert window.windowTitle() == f"{APP_NAME} {__version__}"
+
+
+def test_the_window_carries_the_licence_notice(window):
+    """AGPL-3.0 section 5: the notice is part of the interface, not a dialog."""
+    from p7mmanager import APP_AUTHOR, CONTACT_EMAIL
+
+    notice = window.findChild(type(window.counts_label), "licenceNotice")
+    assert notice is not None
+    text = notice.text()
+    assert "©" in text
+    assert APP_AUTHOR in text
+    assert "AGPL-3.0" in text
+    assert CONTACT_EMAIL in text
+    assert notice.isVisibleTo(window)
+
+
+def test_the_notice_survives_a_language_change(window):
+    """It is a legal notice, not a phrase: it must not disappear when retranslated."""
+    window._set_language(Language.ITALIAN)
+    try:
+        notice = window.findChild(type(window.counts_label), "licenceNotice")
+        assert notice is not None and "AGPL-3.0" in notice.text()
+    finally:
+        set_language(Language.ENGLISH)
+
+
+def test_the_about_dialog_states_the_version_and_the_limits(qapp, window):
+    from p7mmanager import APP_AUTHOR, __version__
+    from p7mmanager.ui.dialogs import AboutDialog
+
+    dialog = AboutDialog(window)
+    try:
+        texts = " ".join(
+            child.text() for child in dialog.findChildren(type(window.counts_label))
+        )
+        assert __version__ in texts
+        assert APP_AUTHOR in texts
+        assert "©" in texts
+        assert "AGPL" in texts or "Affero" in texts
+        assert "not a legal validation" in texts
+    finally:
+        dialog.close()

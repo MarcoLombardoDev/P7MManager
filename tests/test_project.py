@@ -80,6 +80,26 @@ def test_the_commercial_licence_offers_both():
     assert "AGPL" in text
 
 
+@pytest.mark.parametrize(
+    "price", ["€900 / year", "€1,800 / year", "€3,200 / year", "from €5,500 / year",
+              "€2,900 / year", "from €10,000 / year"]
+)
+def test_the_price_list_agrees_with_itself(price: str):
+    """The README quotes the tiers; a reader must not find two answers."""
+    for name in ("README.md", "COMMERCIAL-LICENSE.md"):
+        assert price in (ROOT / name).read_text(encoding="utf-8"), f"{price} missing from {name}"
+
+
+def test_the_interface_carries_the_copyright_line():
+    """AGPL-3.0 section 5, as a constant the window cannot be built without."""
+    from p7mmanager import APP_AUTHOR, APP_NAME, CONTACT_EMAIL, LICENSE_NOTICE
+
+    assert APP_NAME in LICENSE_NOTICE
+    assert APP_AUTHOR in LICENSE_NOTICE
+    assert "AGPL-3.0" in LICENSE_NOTICE
+    assert CONTACT_EMAIL in (ROOT / "COMMERCIAL-LICENSE.md").read_text(encoding="utf-8")
+
+
 def test_claude_md_states_the_branch_and_attribution_rules():
     text = (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
     assert "`main` is the only branch" in text

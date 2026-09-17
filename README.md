@@ -277,8 +277,55 @@ no paid edition, no feature gate, no licence key, no seat limit and no phone-hom
 
 The dividing line is one rule: **AGPL-3.0 is free as long as the source stays open.**
 
-Commercial and Redistribution terms, tiers and prices are in
-**[COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md)**. Enquiries go to
+### Commercial licensing
+
+The commercial offer removes the copyleft obligation, and nothing else. It splits into two
+branches that answer different questions — **Commercial**, sized by how big the organisation
+using P7M Manager internally is, and **Redistribution**, needed whenever the software, or
+its engine, reaches third parties, regardless of size:
+
+```
+Community         AGPL-3.0, free
+Commercial        Small (1–49 employees) · Medium (50–249) · Large (250–999) · Enterprise (1,000+ / group)
+Redistribution    Standard · Enterprise
+```
+
+| Tier | Price | Perpetual | Scope |
+|---|---:|---:|---|
+| **Community** | **Free** | — | Everything P7M Manager does, under AGPL-3.0. Unlimited internal use. |
+| **Commercial — Small** | **€900 / year** | €2,700 | 1–49 employees, internal use, one legal entity. |
+| **Commercial — Medium** | **€1,800 / year** | €5,400 | 50–249 employees, internal use, one legal entity. |
+| **Commercial — Large** | **€3,200 / year** | €9,600 | 250–999 employees, internal use, one legal entity. |
+| **Commercial — Enterprise** | **from €5,500 / year** | — | 1,000+ employees, or a Corporate Group scope. |
+| **Redistribution — Standard** | **€2,900 / year** | €8,700 | Embed it, or its engine, in a product you sell. |
+| **Redistribution — Enterprise** | **from €10,000 / year** | — | Large-scale distribution — worldwide, high volume, or OEM. |
+
+A perpetual licence is three times the annual rate of the same tier, bought once, covering
+the major version current at purchase. Both Enterprise tiers are negotiated per case
+instead.
+
+The same commitments apply at every paid tier:
+
+- **Email support is always included** — 5 business days at Commercial Small down to 2 at
+  either Enterprise tier. It is never sold separately to a paying customer.
+- **Custom development is never included**, at any tier. It is quoted separately, per
+  project, at a fixed price agreed before work starts (indicative day rate: **€500 / day**).
+- **No retroactive price rise, cancel any time.** Versions released during your term stay
+  licensed to you.
+- **50% off** for organisations under 10 employees and €1M revenue. **Free** commercial
+  licences for non-profits, academia and published research — ask.
+
+A Commercial licence, below Enterprise, covers exactly one legal entity: it does not
+automatically extend to other companies in the same group, and it does not include
+redistribution, OEM or embedding rights — those need a Redistribution licence on top.
+Prices are per licensed legal entity, excluding VAT. **Seats are never counted.**
+
+Note what a Redistribution licence is needed for here that is easy to miss: using
+`p7mmanager.core` as a signature-reading library inside your own product is redistribution,
+even though no window is involved.
+
+Full terms, the Employee Count and Corporate Group definitions, and the third-party
+component review: **[COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md)**. Enquiries go to
 [marco.lombardo@gmail.com](mailto:marco.lombardo@gmail.com?subject=P7M%20Manager%20commercial%20licence%20enquiry).
 
 ---

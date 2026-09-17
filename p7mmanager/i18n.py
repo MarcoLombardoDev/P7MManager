@@ -317,6 +317,15 @@ TRANSLATIONS: dict[str, str] = {
     "Quit": "Esci",
     "Stay": "Resta",
     # -- about ------------------------------------------------------------
+    "About": "Informazioni su",
+    "Signed containers, opened": "Buste firmate, aperte",
+    "Commercial licensing": "Licenza commerciale",
+    "P7M Manager is free software released under the GNU Affero General "
+    "Public License, version 3 or later. It works entirely offline: no "
+    "account, no server, no telemetry.":
+        "P7M Manager è software libero rilasciato con licenza GNU Affero General "
+        "Public License, versione 3 o successiva. Funziona completamente offline: "
+        "nessun account, nessun server, nessuna telemetria.",
     "About P7M Manager": "Informazioni su P7M Manager",
     "Inspect signed .p7m containers and extract what they carry":
         "Analizza le buste firmate .p7m ed estrae il documento contenuto",
