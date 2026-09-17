@@ -1,0 +1,75 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "p7m-manager"
+version = "1.0.0"
+description = "P7M Manager — inspect signed .p7m containers and extract the documents they carry"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "AGPL-3.0-or-later"
+license-files = ["LICENSE"]
+keywords = ["p7m", "cades", "pkcs7", "cms", "digital-signature", "pdf", "desktop", "qt", "pyside6"]
+authors = [{ name = "Marco Lombardo" }]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: X11 Applications :: Qt",
+  "Intended Audience :: End Users/Desktop",
+  "Intended Audience :: Legal Industry",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Office/Business",
+  "Topic :: Security :: Cryptography",
+  "Topic :: Utilities",
+]
+dependencies = [
+  "PySide6>=6.6",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "ruff>=0.5",
+]
+
+[project.urls]
+Homepage = "https://github.com/MarcoLombardoDev/P7MManager"
+Source = "https://github.com/MarcoLombardoDev/P7MManager"
+Issues = "https://github.com/MarcoLombardoDev/P7MManager/issues"
+
+[project.gui-scripts]
+p7mmanager = "p7mmanager.main:main"
+
+[project.scripts]
+p7m = "p7mmanager.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["p7mmanager*"]
+
+[tool.setuptools.package-data]
+p7mmanager = ["../resources/styles/*.qss"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]
+ignore = ["B008", "SIM108"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501"]
+# Declarative tables: one entry per line reads better than a wrapped one, and
+# neither file contains logic.
+"p7mmanager/core/oids.py" = ["E501"]
+"p7mmanager/i18n.py" = ["E501"]

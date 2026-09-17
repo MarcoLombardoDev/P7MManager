@@ -1,0 +1,6 @@
+# Development dependencies. The test-suite signs its own fixtures with the
+# openssl binary, which is a system tool rather than a Python package: where it
+# is missing the CMS tests skip and the rest still run.
+-r requirements.txt
+pytest>=8.0
+ruff>=0.5

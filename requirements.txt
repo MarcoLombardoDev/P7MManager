@@ -1,0 +1,6 @@
+# Runtime dependencies for P7M Manager.
+# The engine under p7mmanager/core/ deliberately has none: the ASN.1, CMS and
+# X.509 readers are written against the standard library, so the parsing side
+# runs on a plain Python install and carries no copyleft dependency into a
+# redistributed build. Qt is the interface, and nothing else.
+PySide6>=6.6
