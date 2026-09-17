@@ -36,6 +36,11 @@ First release.
   behaviour of the PowerShell and Python scripts this tool replaces.
 - **English and Italian**, with a test that fails on any interface phrase missing its
   Italian.
+- **Downloadable builds.** A release workflow builds a Windows executable, a macOS bundle
+  and a Linux binary on their own runners, smoke-tests each one — `--self-check` brings up
+  Qt and reports which platform plugin it loaded, because a bundle missing its plugin
+  passes `--version` and then fails on a desktop — and attaches the archives, licence texts
+  included, to the release for the tag.
 - **The name, the version and the copyright, on screen.** The title bar carries the tool
   and its version, the status bar carries the Appropriate Legal Notice AGPL-3.0 section 5
   asks for — copyright, licence and the address for commercial enquiries — and an About box

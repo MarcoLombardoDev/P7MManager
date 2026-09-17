@@ -116,3 +116,22 @@ def test_help_mentions_the_limits_of_the_check(capsys):
     with pytest.raises(SystemExit):
         main(["--help"])
     assert "not a legal validation" in capsys.readouterr().out
+
+
+@requires_openssl
+def test_the_cli_flag_hands_its_arguments_to_the_console_parser(capsys, container_tree):
+    """`--cli folder -r -n` is what the README documents; it must work as written."""
+    from p7mmanager.main import main as entry_point
+
+    code = entry_point(["--cli", str(container_tree), "-r", "-n"])
+
+    assert code == 0
+    assert "contratto.pdf.p7m" in capsys.readouterr().out
+
+
+def test_the_cli_flag_passes_help_through(capsys):
+    from p7mmanager.main import main as entry_point
+
+    with pytest.raises(SystemExit):
+        entry_point(["--cli", "--help"])
+    assert "--recurse" in capsys.readouterr().out

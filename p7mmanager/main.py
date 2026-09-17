@@ -104,13 +104,18 @@ def _choose_language(requested: str | None) -> Language:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    args = _parse_args(argv)
+    arguments = list(sys.argv[1:] if argv is None else argv)
 
-    if args.cli:
+    # --cli hands everything after it to the console tool's own parser,
+    # untouched. Parsing it here first would reject the flags that tool
+    # documents -- `--cli documenti -r -d` is in the README -- because this
+    # parser has never heard of them.
+    if "--cli" in arguments:
         from .cli import main as cli_main
 
-        remaining = [str(path) for path in args.paths]
-        return cli_main(remaining)
+        return cli_main([item for item in arguments if item != "--cli"])
+
+    args = _parse_args(arguments)
 
     setup_logging(args.log_level or logging.INFO)
 
@@ -125,8 +130,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     set_language(_choose_language(args.language))
 
     if args.self_check:
-        print(f"{APP_NAME} {__version__}: Qt platform plugin "
-              f"{app.platformName()!r}, ready")
+        # Two lines, the second in a fixed "key: value" shape, because the
+        # release workflow parses it: a bundle whose Qt platform plugin is
+        # missing still passes --version, and would then fail on a desktop.
+        print(f"{APP_NAME} {__version__}")
+        print(f"platform plugin: {app.platformName()}")
         return 0
 
     _apply_stylesheet(app)

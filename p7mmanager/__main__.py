@@ -6,11 +6,17 @@
 # A commercial licence, without the AGPL's obligations, is available for use
 # in proprietary or closed-source products — see COMMERCIAL-LICENSE.md.
 
-"""``python -m p7mmanager``."""
+"""``python -m p7mmanager``.
+
+The import is absolute rather than relative on purpose: PyInstaller runs this
+file as a top-level script, with no parent package, and a relative import
+fails there with "attempted relative import with no known parent package" —
+in the frozen build only, which is exactly where nobody is watching.
+"""
 
 from __future__ import annotations
 
-from .main import main
+from p7mmanager.main import main
 
 if __name__ == "__main__":
     raise SystemExit(main())

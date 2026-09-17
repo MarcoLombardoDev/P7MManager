@@ -14,6 +14,8 @@
 # exception into the archive. That combination is the one a redistribution
 # licence cannot survive; see COMMERCIAL-LICENSE.md.
 
+import sys
+
 block_cipher = None
 
 a = Analysis(
@@ -67,3 +69,22 @@ coll = COLLECT(
     upx=False,
     name="P7MManager",
 )
+
+# macOS expects an application bundle, not a folder of files: double-clicking a
+# COLLECT directory does nothing there. Built from the same collection, so the
+# three platforms ship identical contents in the shape each one expects.
+if sys.platform == "darwin":
+    app = BUNDLE(
+        coll,
+        name="P7MManager.app",
+        icon=None,
+        bundle_identifier="dev.marcolombardo.p7mmanager",
+        info_plist={
+            "CFBundleName": "P7M Manager",
+            "CFBundleDisplayName": "P7M Manager",
+            "CFBundleShortVersionString": "1.0.0",
+            "CFBundleVersion": "1.0.0",
+            "NSHighResolutionCapable": True,
+            "LSMinimumSystemVersion": "11.0",
+        },
+    )

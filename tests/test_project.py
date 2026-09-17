@@ -114,6 +114,35 @@ def test_pyproject_declares_the_entry_points():
     assert "PySide6" in text
 
 
+def test_the_entry_point_survives_freezing():
+    """PyInstaller runs __main__.py with no parent package.
+
+    A relative import there fails only in the frozen build, which is the one
+    place nobody runs before publishing it — as this project found out by
+    building one.
+    """
+    source = (PACKAGE / "__main__.py").read_text(encoding="utf-8")
+    assert "from p7mmanager.main import main" in source
+    assert "from .main import" not in source
+
+
+def test_the_release_workflow_builds_on_a_tag():
+    workflow = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+    assert 'tags: ["v*"]' in workflow, "a tag must start the release build"
+    assert "workflow_dispatch" in workflow, "a tag that predates the workflow needs a way in"
+    assert "contents: write" in workflow, "uploading assets needs write permission"
+    assert "--self-check" in workflow, "a bundle is smoke-tested before it is published"
+    for asset in ("windows-x64", "macos-arm64", "linux-x64"):
+        assert asset in workflow
+    assert (ROOT / ".github" / "release-body.md").is_file()
+
+
+def test_the_release_notes_state_the_limits():
+    notes = (ROOT / ".github" / "release-body.md").read_text(encoding="utf-8")
+    assert "not a legal validation" in notes
+    assert "AGPL-3.0" in notes
+
+
 def test_the_launchers_are_shipped():
     assert (ROOT / "packaging" / "start.cmd").is_file()
     assert (ROOT / "packaging" / "start.sh").is_file()
