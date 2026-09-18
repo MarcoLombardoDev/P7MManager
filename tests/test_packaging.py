@@ -115,8 +115,28 @@ def test_the_launcher_verifies_before_it_launches(name: str):
 
 
 def test_the_shell_launcher_is_executable():
-    mode = (ROOT / "packaging" / "start.sh").stat().st_mode
-    assert mode & 0o111, "start.sh must be executable in the repository"
+    """Asked of git, not of the filesystem.
+
+    The mode that matters is the one recorded in the index — 100755 — because
+    that is what a Linux or macOS checkout gets, and what the release job
+    copies into the archive. A Windows filesystem has no execute bit at all,
+    so reading st_mode there fails on a file that is perfectly correct.
+    """
+    import subprocess
+
+    try:
+        entry = subprocess.run(
+            ["git", "ls-files", "-s", "packaging/start.sh"],
+            cwd=ROOT, capture_output=True, text=True, check=True,
+        ).stdout
+    except (OSError, subprocess.CalledProcessError):  # pragma: no cover
+        pytest.skip("not a git checkout")
+    if not entry.strip():  # pragma: no cover - file not tracked yet
+        pytest.skip("start.sh is not in the index")
+    assert entry.startswith("100755"), (
+        "start.sh must be executable in the repository: "
+        "git update-index --chmod=+x packaging/start.sh"
+    )
 
 
 # --- the archive ------------------------------------------------------------
