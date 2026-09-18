@@ -39,8 +39,10 @@ First release.
 - **Downloadable builds.** A release workflow builds a Windows executable, a macOS bundle
   and a Linux binary on their own runners, smoke-tests each one — `--self-check` brings up
   Qt and reports which platform plugin it loaded, because a bundle missing its plugin
-  passes `--version` and then fails on a desktop — and attaches the archives to the release
-  for the tag, with each archive's checksum published beside it.
+  passes `--version` and then fails on a desktop — and attaches the three archives to the
+  release for the tag. Their SHA-256 digests are written into the release notes rather than
+  published as assets: a checksum has to arrive by a route the archive did not, and the
+  page is such a route without putting three more files in a download list.
 - **One shape for every download.** Each archive unpacks to a folder called `P7M Manager`
   holding the launcher, the executable, its checksum and the licence texts. The launcher
   verifies the program against that checksum before starting it — what catches a truncated

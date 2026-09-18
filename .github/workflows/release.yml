@@ -100,6 +100,33 @@ jobs:
           gh release create "$TAG" --title "$title" --notes "$notes" \
             || gh release edit "$TAG" --title "$title" --notes "$notes" --draft=false
 
+      # A release the tag was moved onto still carries whatever was published
+      # there before. The archives below are named after the platform and the
+      # version, so an older scheme's file is not overwritten by name -- it
+      # simply sits alongside them, offering a download that no longer matches
+      # the notes above it. The .sha256 files an earlier run published as
+      # assets are deliberately not on the keep list: the checksums belong in
+      # the notes, and the job at the end of this file puts them there.
+      - name: Remove assets left by a previous build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.tag.outputs.tag }}
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          keep=""
+          for asset in "windows-x64.zip" "macos-arm64.zip" "linux-x64.tar.gz"; do
+            keep="$keep P7MManager-$VERSION-$asset"
+          done
+          for name in $(gh release view "$TAG" --json assets --jq '.assets[].name'); do
+            case " $keep " in
+              *" $name "*) ;;
+              *)
+                echo "removing stale asset: $name"
+                gh release delete-asset "$TAG" "$name" --yes
+                ;;
+            esac
+          done
+
   build:
     name: ${{ matrix.label }}
     needs: release
@@ -239,9 +266,10 @@ jobs:
       # The checksum written here is of the executable, and it travels in the
       # same archive. That catches a truncated download or a half-finished
       # unpack; it cannot catch tampering, because whoever could replace the
-      # one could replace the other. The archive's own .sha256, published as a
-      # separate release asset and reaching the user by a different path, is
-      # the one that answers that question.
+      # one could replace the other. The archive's own SHA-256, written into
+      # the release notes by the last job in this file and so reaching the user
+      # by a different path from the download, is the one that answers that
+      # question.
       - name: Add the launcher, the licences and their checksum
         id: launcher
         shell: bash
@@ -389,8 +417,12 @@ jobs:
       # a code-signing certificate can -- but a published checksum is what lets
       # a cautious person answer the question the warning actually raises: is
       # this the file the build produced, or something that replaced it on the
-      # way here. It is an asset of its own, so it travels by a different path
-      # from the archive it describes.
+      # way here.
+      #
+      # Computed with Python rather than sha256sum or certutil: setup-python
+      # has already run on all three runners, so one line means the same thing
+      # everywhere, and file_digest reads in chunks rather than pulling the
+      # whole archive into memory.
       - name: Record the checksum
         shell: bash
         env:
@@ -418,4 +450,90 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ needs.release.outputs.tag }}
           ARCHIVE: ${{ steps.package.outputs.archive }}
-        run: gh release upload "$TAG" "$ARCHIVE" "$ARCHIVE.sha256" --clobber
+        run: gh release upload "$TAG" "$ARCHIVE" --clobber
+
+      # The digest goes up as a workflow artifact rather than a release asset.
+      # It still has to reach the release page -- a checksum is only worth
+      # anything if it arrives by a route the archive did not -- but three more
+      # files in the download list is not the way. The job at the end of this
+      # file collects the three and writes them into the notes.
+      - name: Hand the checksum to the notes job
+        uses: actions/upload-artifact@v4
+        with:
+          name: checksum-${{ matrix.asset }}
+          path: ${{ steps.package.outputs.archive }}.sha256
+          if-no-files-found: error
+          retention-days: 1
+
+  # Where the checksums end up.
+  #
+  # Not as release assets: what a checksum has to do is arrive by a route the
+  # archive did not, so that a replaced archive cannot quietly carry a matching
+  # digest -- and the notes GitHub renders on the release page are exactly such
+  # a route, without putting three more files in a download list where someone
+  # is looking for one. Being read rather than downloaded is if anything the
+  # point: it is the archive that gets copied around, not the page.
+  #
+  # This runs after all three builds, because a partial list is worse than
+  # none: a reader who finds two of three has no way to tell whether the third
+  # is missing or merely unlisted.
+  checksums:
+    name: Write the checksums into the notes
+    needs: [release, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: checksum-*
+          path: checksums
+          merge-multiple: true
+
+      - name: Write them into the release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.release.outputs.tag }}
+        run: |
+          gh release view "$TAG" --json body --jq .body > body.md
+          python3 - body.md checksums <<'PY'
+          import pathlib
+          import sys
+
+          body_path, digests = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
+
+          # Ordered by the archive's name, not by the digest, so the three
+          # lines read in the same order as the table above them.
+          lines = sorted(
+              (path.read_text(encoding="utf-8").strip()
+               for path in digests.glob("*.sha256")),
+              key=lambda line: line.split("  ", 1)[-1],
+          )
+          if not lines:
+              raise SystemExit("no checksums were handed up by the build jobs")
+
+          listing = "\n".join(lines)
+          block = (
+              "<!-- checksums -->\n"
+              "### Checksums\n\n"
+              "SHA-256 of each archive as the build machine produced it. They "
+              "are on this page rather than inside the archives on purpose: a "
+              "digest that travels with the file it describes can only tell "
+              "you the file is undamaged.\n\n"
+              f"```\n{listing}\n```\n"
+              "<!-- /checksums -->"
+          )
+
+          body = body_path.read_text(encoding="utf-8")
+          head, marker, rest = body.partition("<!-- checksums -->")
+          if marker:
+              # A re-run rewrites its own block rather than stacking another
+              # one under it.
+              _, _, tail = rest.partition("<!-- /checksums -->")
+              body = head + block + tail
+          else:
+              body = body.rstrip("\n") + "\n\n" + block + "\n"
+
+          body_path.write_text(body, encoding="utf-8")
+          print(body)
+          PY
+          gh release edit "$TAG" --notes-file body.md

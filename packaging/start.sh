@@ -14,8 +14,9 @@
 # What it does NOT catch is tampering. The checksum travels inside the same
 # archive as the file it describes, so anyone able to alter the executable
 # could alter the checksum in the same breath. The check worth doing against
-# that is on the archive itself, using the `.sha256` published as a separate
-# release asset — it reaches you by a different path, which is the whole point.
+# that is on the archive itself, against the SHA-256 printed in the release
+# notes — it reaches you by a different path from the download, which is the
+# whole point.
 #
 # Portable /bin/sh on purpose: it runs on the Linux build and, renamed
 # start.command so Finder will double-click it, on the macOS one.
@@ -96,8 +97,8 @@ else
         echo "  found    $actual" >&2
         echo "" >&2
         echo "Unpack the archive again from a fresh download. If it still" >&2
-        echo "does not match, check the archive's own .sha256 from the" >&2
-        echo "release page before running anything out of it." >&2
+        echo "does not match, check the archive against the SHA-256 printed" >&2
+        echo "on the release page before running anything out of it." >&2
         exit 1
     fi
 fi

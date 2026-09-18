@@ -21,8 +21,9 @@ rem
 rem What it does NOT catch is tampering. The checksum travels inside the same
 rem zip as the file it describes, so anyone able to alter the executable could
 rem alter the checksum in the same breath. The check worth doing against that
-rem is on the zip itself, using the .sha256 published as a separate release
-rem asset -- it reaches you by a different path, which is the whole point.
+rem is on the zip itself, against the SHA-256 printed in the release notes --
+rem it reaches you by a different path from the download, which is the whole
+rem point.
 rem
 rem This script does not remove the SmartScreen warning and cannot: only a
 rem code-signing certificate does that.
@@ -100,8 +101,8 @@ if /i not "%ACTUAL%"=="%EXPECTED%" (
     echo   found    %ACTUAL% 1>&2
     echo. 1>&2
     echo Unpack the archive again from a fresh download. If it still does not 1>&2
-    echo match, check the zip's own .sha256 from the release page before 1>&2
-    echo running anything out of it. 1>&2
+    echo match, check the zip against the SHA-256 printed on the release page 1>&2
+    echo before running anything out of it. 1>&2
     if not defined CI pause
     exit /b 1
 )

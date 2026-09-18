@@ -154,12 +154,12 @@ The builds are unsigned, so the first launch brings a warning on every platform:
 *More info → Run anyway*, on macOS *right-click → Open*. Only a code-signing certificate
 removes those, and this project has none.
 
-To check the download itself rather than what came out of it, each archive has a `.sha256`
-published beside it on the releases page — it reaches you by a different path from the
-archive, which is what makes it worth checking:
+To check the download itself rather than what came out of it, the SHA-256 of every archive
+is printed in the release notes — it reaches you by a different path from the archive,
+which is what makes it worth checking:
 
 ```bash
-sha256sum -c P7MManager-1.0.0-linux-x64.tar.gz.sha256
+sha256sum P7MManager-1.0.0-linux-x64.tar.gz    # compare with the release page
 ```
 
 ### From source

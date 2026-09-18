@@ -169,5 +169,41 @@ def test_windows_keeps_the_top_level_folder():
     assert "Compress-Archive -Path" not in WORKFLOW
 
 
-def test_the_archive_checksum_is_published_separately():
-    assert 'gh release upload "$TAG" "$ARCHIVE" "$ARCHIVE.sha256"' in WORKFLOW
+def test_the_checksums_go_into_the_notes_and_not_the_download_list():
+    """As in Orion: three extra files in a download list is not the way.
+
+    A checksum still has to arrive by a route the archive did not, which the
+    release page's notes are; what it must not do is sit beside the archive as
+    another asset someone has to scroll past.
+    """
+    assert 'gh release upload "$TAG" "$ARCHIVE" --clobber' in WORKFLOW
+    assert '"$ARCHIVE.sha256" --clobber' not in WORKFLOW
+    assert "gh release edit \"$TAG\" --notes-file body.md" in WORKFLOW
+    assert "<!-- checksums -->" in WORKFLOW, "the block must be rewritable on a re-run"
+
+
+def test_a_partial_list_of_checksums_is_never_written():
+    """The notes job waits for all three builds; two of three is worse than
+    none, because a reader cannot tell missing from unlisted."""
+    import re
+
+    block = re.search(r"  checksums:\n(.*?)(?:\n  [a-z]|\Z)", WORKFLOW, re.S)
+    assert block, "the checksums job is missing"
+    assert "needs: [release, build]" in block.group(1)
+    assert "no checksums were handed up by the build jobs" in block.group(1)
+
+
+def test_stale_assets_from_an_earlier_build_are_removed():
+    """A moved tag lands on a release that may already carry assets — including
+    the .sha256 files this workflow used to publish."""
+    assert "Remove assets left by a previous build" in WORKFLOW
+    assert "gh release delete-asset" in WORKFLOW
+
+
+def test_the_launchers_point_at_the_release_notes_for_the_real_check():
+    """The launcher may not imply it catches tampering: the digest it reads
+    travels in the same archive. It says where the useful check lives."""
+    for name in ("start.cmd", "start.sh"):
+        text = (ROOT / "packaging" / name).read_text(encoding="utf-8")
+        assert "release notes" in text or "release page" in text
+        assert "published as a separate" not in text

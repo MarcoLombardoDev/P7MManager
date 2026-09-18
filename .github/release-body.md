@@ -14,12 +14,9 @@ the program against the checksum shipped beside it and refuses to start somethin
 not match — which catches a truncated download or a half-finished unpack. Arguments pass
 straight through, so `start.cmd --cli documenti -r` works too.
 
-To check the download itself, each archive has a `.sha256` published beside it here; it
-reaches you by a different path from the archive, which is the point.
-
-```
-sha256sum -c P7MManager-{{VERSION}}-linux-x64.tar.gz.sha256
-```
+To check the download itself, the SHA-256 of each archive is at the bottom of this page.
+It reaches you by a different path from the archive, which is the point — a replaced
+download cannot quietly carry a matching digest.
 
 The builds are unsigned — there is no code-signing certificate behind this project — so
 every platform will say so the first time. Nothing in a release can remove that warning;
