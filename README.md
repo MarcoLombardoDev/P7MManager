@@ -124,6 +124,44 @@ is good for is the question those services answer slowly and this one answers in
 
 ## Installation
 
+### Download a build
+
+The [releases page](https://github.com/MarcoLombardoDev/P7MManager/releases) carries a
+build for each platform. Nothing needs installing: unpack it and run it.
+
+Every archive unpacks to a single folder called **`P7M Manager`**, the same on all three
+platforms:
+
+```
+P7M Manager/
+├── start.cmd              ← Windows: this is what you run
+├── P7MManager.exe         (P7MManager on Linux, P7MManager.app on macOS)
+├── P7MManager.exe.sha256  the executable's checksum, which start.cmd verifies
+├── _internal/             Qt and the interpreter — leave it alone
+├── LICENSE
+├── COMMERCIAL-LICENSE.md
+├── README.md
+└── CHANGELOG.md
+```
+
+On Linux and macOS the launcher is `start.sh` and `start.command` respectively; both do the
+same thing. **Run the launcher rather than the executable**: it recomputes the checksum
+shipped beside the program and refuses to start something that does not match, which is
+what catches a truncated download or a half-finished unpack. Pass it arguments and they go
+straight through — `start.cmd --cli documenti -r` works.
+
+The builds are unsigned, so the first launch brings a warning on every platform: on Windows
+*More info → Run anyway*, on macOS *right-click → Open*. Only a code-signing certificate
+removes those, and this project has none.
+
+To check the download itself rather than what came out of it, each archive has a `.sha256`
+published beside it on the releases page — it reaches you by a different path from the
+archive, which is what makes it worth checking:
+
+```bash
+sha256sum -c P7MManager-1.0.0-linux-x64.tar.gz.sha256
+```
+
 ### From source
 
 ```bash
@@ -133,12 +171,6 @@ python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 python -m p7mmanager
-```
-
-Or use the launcher, which creates the virtual environment on first run:
-
-```bash
-packaging/start.sh                 # Windows: packaging\start.cmd
 ```
 
 ### As a package
@@ -236,6 +268,13 @@ pyinstaller p7mmanager.spec
 The result lands in `dist/P7MManager/`. Read the exclusions in `p7mmanager.spec` before
 changing them: one of them keeps a GPL-3 library with no linking exception out of the
 archive, which matters to anyone redistributing a build.
+
+That is the program alone. The release workflow is what turns it into the download
+described above — it renames the folder to `P7M Manager`, drops the launcher and the
+licence texts in beside the executable, writes the checksum the launcher verifies, and
+starts the bundle through the launcher before publishing it. The application icon is drawn
+by `tools/make_icon.py` and committed, so a build never depends on which fonts a runner
+happens to have: see [resources/icons/README.md](resources/icons/README.md).
 
 ## Troubleshooting
 

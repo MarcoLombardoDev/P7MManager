@@ -15,14 +15,32 @@
 # licence cannot survive; see COMMERCIAL-LICENSE.md.
 
 import sys
+from pathlib import Path
 
 block_cipher = None
+
+# Windows wants an .ico, macOS an .icns, and PyInstaller takes a PNG for
+# everything else. All three are drawn by tools/make_icon.py and committed, so
+# a build never depends on the fonts — or the Pillow — a runner happens to
+# have. A missing icon is not worth failing a build over: the platform default
+# is ugly, not broken.
+_icons = Path("resources") / "icons"
+_icon_file = {"win32": "p7mmanager.ico", "darwin": "p7mmanager.icns"}.get(
+    sys.platform, "p7mmanager.png"
+)
+_icon_path = _icons / _icon_file
+icon = str(_icon_path) if _icon_path.exists() else None
 
 a = Analysis(
     ["p7mmanager/__main__.py"],
     pathex=["."],
     binaries=[],
-    datas=[("resources/styles/p7mmanager.qss", "resources/styles")],
+    datas=[
+        ("resources/styles/p7mmanager.qss", "resources/styles"),
+        # The window and taskbar icon is read at runtime from here, so it
+        # ships inside the bundle as well as being embedded in the executable.
+        ("resources/icons/p7mmanager.png", "resources/icons"),
+    ],
     hiddenimports=[],
     hookspath=[],
     runtime_hooks=[],
@@ -58,6 +76,7 @@ exe = EXE(
     strip=False,
     upx=False,
     console=False,
+    icon=icon,
 )
 
 coll = COLLECT(
@@ -77,7 +96,7 @@ if sys.platform == "darwin":
     app = BUNDLE(
         coll,
         name="P7MManager.app",
-        icon=None,
+        icon=icon,
         bundle_identifier="dev.marcolombardo.p7mmanager",
         info_plist={
             "CFBundleName": "P7M Manager",

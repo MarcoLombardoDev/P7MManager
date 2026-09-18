@@ -67,6 +67,19 @@ def _apply_stylesheet(app) -> None:
         log.debug("No stylesheet at %s; using the platform look", sheet)
 
 
+def _set_application_icon(app) -> None:
+    """Use the bundled application icon, if it is where we expect it."""
+    from PySide6.QtGui import QIcon
+
+    from .utils.paths import resources_dir
+
+    candidate = resources_dir() / "icons" / "p7mmanager.png"
+    if candidate.exists():
+        app.setWindowIcon(QIcon(str(candidate)))
+        return
+    log.debug("No application icon found; using the platform default")
+
+
 def _install_exception_hook(window) -> None:
     from PySide6.QtWidgets import QMessageBox
 
@@ -138,6 +151,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
 
     _apply_stylesheet(app)
+    _set_application_icon(app)
 
     from .ui.main_window import MainWindow
 

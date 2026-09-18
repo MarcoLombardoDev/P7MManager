@@ -4,13 +4,26 @@ nothing phones home.
 
 | Platform | Download | How to run it |
 |---|---|---|
-| **Windows** (x64) | `P7MManager-{{VERSION}}-windows-x64.zip` | Unzip anywhere, run `P7MManager.exe`. Windows SmartScreen will warn about an unsigned application: *More info → Run anyway*. |
-| **macOS** (Apple silicon) | `P7MManager-{{VERSION}}-macos-arm64.zip` | Unzip, move `P7MManager.app` to Applications. The bundle is unsigned: first launch is *right-click → Open*, or `xattr -dr com.apple.quarantine P7MManager.app`. |
-| **Linux** (x64) | `P7MManager-{{VERSION}}-linux-x64.tar.gz` | Extract and run `./P7MManager`. Needs the usual Qt libraries: `libegl1 libgl1 libxkbcommon0 libfontconfig1`. |
+| **Windows** (x64) | `P7MManager-{{VERSION}}-windows-x64.zip` | Unzip, open the `P7M Manager` folder, run **`start.cmd`**. SmartScreen will warn about an unsigned application: *More info → Run anyway*. |
+| **macOS** (Apple silicon) | `P7MManager-{{VERSION}}-macos-arm64.zip` | Unzip, open the `P7M Manager` folder, run **`start.command`**. The bundle is unsigned: first launch is *right-click → Open*. |
+| **Linux** (x64) | `P7MManager-{{VERSION}}-linux-x64.tar.gz` | Extract, `cd "P7M Manager"`, run **`./start.sh`**. Needs the usual Qt libraries: `libegl1 libgl1 libxkbcommon0 libfontconfig1`. |
 
-Each archive carries the licence texts and this version's `README.md`. The builds are
-unsigned — there is no code-signing certificate behind this project — so every platform
-will say so the first time.
+Every archive unpacks to one folder, `P7M Manager`, holding the launcher, the executable,
+its checksum and the licence texts. **Run the launcher, not the executable**: it verifies
+the program against the checksum shipped beside it and refuses to start something that does
+not match — which catches a truncated download or a half-finished unpack. Arguments pass
+straight through, so `start.cmd --cli documenti -r` works too.
+
+To check the download itself, each archive has a `.sha256` published beside it here; it
+reaches you by a different path from the archive, which is the point.
+
+```
+sha256sum -c P7MManager-{{VERSION}}-linux-x64.tar.gz.sha256
+```
+
+The builds are unsigned — there is no code-signing certificate behind this project — so
+every platform will say so the first time. Nothing in a release can remove that warning;
+only a certificate can.
 
 Prefer to run from source, or want the command line on a server?
 

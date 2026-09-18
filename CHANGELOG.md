@@ -39,8 +39,17 @@ First release.
 - **Downloadable builds.** A release workflow builds a Windows executable, a macOS bundle
   and a Linux binary on their own runners, smoke-tests each one — `--self-check` brings up
   Qt and reports which platform plugin it loaded, because a bundle missing its plugin
-  passes `--version` and then fails on a desktop — and attaches the archives, licence texts
-  included, to the release for the tag.
+  passes `--version` and then fails on a desktop — and attaches the archives to the release
+  for the tag, with each archive's checksum published beside it.
+- **One shape for every download.** Each archive unpacks to a folder called `P7M Manager`
+  holding the launcher, the executable, its checksum and the licence texts. The launcher
+  verifies the program against that checksum before starting it — what catches a truncated
+  download or a half-finished unpack — and refuses to start something that does not match;
+  the release build proves both halves before publishing.
+- **An application icon**: a serif `P` in a frame, black on white, the same drawing Orion
+  uses for its `O`, so the products read as one family on a taskbar. Drawn by
+  `tools/make_icon.py` into the `.ico`, `.icns` and `.png` a release needs, committed rather
+  than generated at build time, and checked by a test that redraws them.
 - **The name, the version and the copyright, on screen.** The title bar carries the tool
   and its version, the status bar carries the Appropriate Legal Notice AGPL-3.0 section 5
   asks for — copyright, licence and the address for commercial enquiries — and an About box

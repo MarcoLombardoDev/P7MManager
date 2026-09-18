@@ -143,7 +143,6 @@ def test_the_release_notes_state_the_limits():
     assert "AGPL-3.0" in notes
 
 
-def test_the_launchers_are_shipped():
-    assert (ROOT / "packaging" / "start.cmd").is_file()
-    assert (ROOT / "packaging" / "start.sh").is_file()
+def test_the_spec_is_shipped():
+    """The launchers themselves are covered by tests/test_packaging.py."""
     assert (ROOT / "p7mmanager.spec").is_file()

@@ -44,6 +44,10 @@ env:
   # The bundle's name on disk, which is not the display name: PyInstaller's
   # output path, the executable and the archives all use this one.
   APP_NAME: P7MManager
+  # What the archive unpacks to. The product's name, space and all, because
+  # that is the folder someone ends up with on their desktop; the executable
+  # inside keeps the spaceless form, because it is also typed at a prompt.
+  FOLDER_NAME: P7M Manager
   PYTHON_VERSION: "3.12"
 
 jobs:
@@ -222,54 +226,196 @@ jobs:
               ;;
           esac
 
-      # The archive carries the licence texts as well as the program: AGPL-3.0
-      # section 5 asks for them, and a downloader who never opens the
-      # repository has no other copy.
+      # PyInstaller's COLLECT owns everything it writes -- a file dropped into
+      # dist/ before it runs is removed, and datas land under _internal/, which
+      # is exactly where a launcher must not be. The only place that can write
+      # next to the executable is the workflow, after COLLECT has finished.
+      #
+      # The folder is renamed to "P7M Manager" here, with the space: that is
+      # what someone sees after unpacking, and it is the product's name. The
+      # executable keeps the spaceless form, because it is also typed on a
+      # command line.
+      #
+      # The checksum written here is of the executable, and it travels in the
+      # same archive. That catches a truncated download or a half-finished
+      # unpack; it cannot catch tampering, because whoever could replace the
+      # one could replace the other. The archive's own .sha256, published as a
+      # separate release asset and reaching the user by a different path, is
+      # the one that answers that question.
+      - name: Add the launcher, the licences and their checksum
+        id: launcher
+        shell: bash
+        env:
+          PAYLOAD: ${{ steps.built.outputs.payload }}
+        run: |
+          root="dist/pkg/$FOLDER_NAME"
+          mkdir -p dist/pkg
+
+          case "$RUNNER_OS" in
+            Windows)
+              mv "$PAYLOAD" "$root"
+              cp packaging/start.cmd "$root/start.cmd"
+              named="$APP_NAME.exe"
+              sums="$root/$APP_NAME.exe.sha256"
+              ;;
+            macOS)
+              # The payload is P7MManager.app, and a launcher does not belong
+              # inside somebody else's bundle. So the app moves into a folder
+              # of its own and the launcher sits beside it -- which also makes
+              # all three archives unpack to the same shape.
+              mkdir -p "$root"
+              mv "$PAYLOAD" "$root/"
+              cp packaging/start.sh "$root/start.command"
+              chmod +x "$root/start.command"
+              named="$APP_NAME.app/Contents/MacOS/$APP_NAME"
+              sums="$root/$APP_NAME.sha256"
+              ;;
+            *)
+              mv "$PAYLOAD" "$root"
+              cp packaging/start.sh "$root/start.sh"
+              chmod +x "$root/start.sh"
+              named="$APP_NAME"
+              sums="$root/$APP_NAME.sha256"
+              ;;
+          esac
+
+          # A downloader who never opens the repository has no other copy of
+          # the terms, and AGPL-3.0 section 5 asks for them to travel with it.
+          cp LICENSE COMMERCIAL-LICENSE.md README.md CHANGELOG.md "$root/"
+
+          # Written in the format `sha256sum -c` reads, with the name relative
+          # to the file itself, so the archive can also be checked with a tool
+          # instead of only by the launcher.
+          python - "$root/$named" "$sums" "$named" <<'PY'
+          import hashlib
+          import pathlib
+          import sys
+
+          target, out, name = sys.argv[1:4]
+          with open(target, "rb") as handle:
+              digest = hashlib.file_digest(handle, "sha256").hexdigest()
+          pathlib.Path(out).write_text(f"{digest}  {name}\n", encoding="utf-8")
+          print(f"{digest}  {name}")
+          PY
+
+          echo "payload=$root" >> "$GITHUB_OUTPUT"
+          ls -la "$root"
+
+      # A launcher that refuses to launch is worse than no launcher, and one
+      # that launches whatever it finds is decoration. Both halves are checked
+      # here, on a copy -- never on the directory about to be packaged, because
+      # a check that leaves its own droppings inside the archive has broken the
+      # thing it was there to protect.
+      - name: Start the bundle through the launcher
+        shell: bash
+        env:
+          ROOT: ${{ steps.launcher.outputs.payload }}
+          VERSION: ${{ needs.release.outputs.version }}
+        run: |
+          rm -rf "$RUNNER_TEMP/launchcheck"
+          cp -R "$ROOT" "$RUNNER_TEMP/launchcheck"
+          check="$RUNNER_TEMP/launchcheck"
+
+          case "$RUNNER_OS" in
+            # `cmd //c` and not `cmd /c`: Git Bash rewrites a lone leading
+            # slash into a Windows path, and the doubled one survives that.
+            Windows) launch="cmd //c start.cmd"; sums="$check/$APP_NAME.exe.sha256" ;;
+            macOS)   launch="./start.command";   sums="$check/$APP_NAME.sha256" ;;
+            *)       launch="./start.sh";        sums="$check/$APP_NAME.sha256" ;;
+          esac
+
+          # It launches what is there.
+          reported=$( cd "$check" && $launch --version | tr -d '\r' )
+          echo "$reported"
+          case "$reported" in
+            *" $VERSION") ;;
+            *)
+              echo "::error::the launcher started something that reports '$reported'"
+              exit 1
+              ;;
+          esac
+
+          # And it refuses to launch something else. A digest of the right
+          # shape and the wrong value, so what is exercised is the comparison
+          # rather than the "missing file" path beside it.
+          printf '%s  x\n' "0000000000000000000000000000000000000000000000000000000000000000" > "$sums"
+          if ( cd "$check" && CI=1 $launch --version ) > /dev/null 2>&1; then
+            echo "::error::the launcher started an executable whose checksum did not match"
+            exit 1
+          fi
+          echo "the launcher refuses a mismatched executable, as it should"
+
       - name: Package
         id: package
         shell: bash
         env:
-          PAYLOAD: ${{ steps.built.outputs.payload }}
+          PAYLOAD: ${{ steps.launcher.outputs.payload }}
           VERSION: ${{ needs.release.outputs.version }}
           ASSET: ${{ matrix.asset }}
         run: |
-          staging="staging/$APP_NAME"
-          mkdir -p "$staging"
-          cp -R "$PAYLOAD" "$staging/"
-          cp LICENSE COMMERCIAL-LICENSE.md README.md CHANGELOG.md "$staging/"
-
           name="$APP_NAME-$VERSION-$ASSET"
-          if [ "$RUNNER_OS" = "Linux" ]; then
-            archive="$name.tar.gz"
-            tar -czf "$archive" -C staging "$APP_NAME"
-          else
-            archive="$name.zip"
-            # ditto on macOS keeps the bundle's symlinks and permissions, which
-            # a plain zip flattens into an .app that will not launch.
-            if [ "$RUNNER_OS" = "macOS" ]; then
-              ditto -c -k --sequesterRsrc --keepParent "staging/$APP_NAME" "$archive"
-            else
-              powershell -Command "Compress-Archive -Path staging/$APP_NAME -DestinationPath $archive -CompressionLevel Optimal"
-            fi
-          fi
+          out="$PWD"
+          parent="$(dirname "$PAYLOAD")"
+          folder="$(basename "$PAYLOAD")"
+
+          case "$RUNNER_OS" in
+            Windows)
+              archive="$name.zip"
+              # 7z ships on the Windows runner image and, unlike
+              # Compress-Archive, keeps the top-level folder for a directory
+              # payload -- so every platform's archive unpacks the same way.
+              # Run from inside the payload's parent, because 7z stores the
+              # path it is given.
+              ( cd "$parent" && 7z a -tzip "$out/$archive" "$folder" > /dev/null )
+              ;;
+            macOS)
+              archive="$name.zip"
+              # ditto keeps the symlinks and permission bits inside a .app
+              # bundle; zip flattens them and a flattened bundle will not
+              # launch.
+              ditto -c -k --sequesterRsrc --keepParent "$PAYLOAD" "$out/$archive"
+              ;;
+            *)
+              archive="$name.tar.gz"
+              tar -czf "$out/$archive" -C "$parent" "$folder"
+              ;;
+          esac
 
           echo "archive=$archive" >> "$GITHUB_OUTPUT"
-          # Filed in the run's summary rather than uploaded: a .sha256 asset
-          # downloaded over the same connection as the file it checks proves
-          # very little, and the summary is where someone verifying a download
-          # can read it without downloading anything.
-          if command -v sha256sum >/dev/null; then
-            sum=$(sha256sum "$archive")
-          else
-            sum=$(shasum -a 256 "$archive")
-          fi
-          echo "$sum"
-          echo "\`$sum\`" >> "$GITHUB_STEP_SUMMARY"
+          ls -la "$archive"
 
-      - name: Attach it to the release
+      # These builds are unsigned, so every platform tells whoever downloads
+      # one that the publisher is unknown. Nothing here can remove that -- only
+      # a code-signing certificate can -- but a published checksum is what lets
+      # a cautious person answer the question the warning actually raises: is
+      # this the file the build produced, or something that replaced it on the
+      # way here. It is an asset of its own, so it travels by a different path
+      # from the archive it describes.
+      - name: Record the checksum
+        shell: bash
+        env:
+          ARCHIVE: ${{ steps.package.outputs.archive }}
+        run: |
+          python - "$ARCHIVE" <<'PY'
+          import hashlib
+          import pathlib
+          import sys
+
+          archive = pathlib.Path(sys.argv[1])
+          with archive.open("rb") as handle:
+              digest = hashlib.file_digest(handle, "sha256").hexdigest()
+          # The format sha256sum -c reads, so it can be checked with a tool
+          # rather than by eye.
+          pathlib.Path(f"{archive.name}.sha256").write_text(
+              f"{digest}  {archive.name}\n", encoding="utf-8"
+          )
+          print(f"{digest}  {archive.name}")
+          PY
+
+      - name: Upload to the release
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ needs.release.outputs.tag }}
           ARCHIVE: ${{ steps.package.outputs.archive }}
-        shell: bash
-        run: gh release upload "$TAG" "$ARCHIVE" --clobber
+        run: gh release upload "$TAG" "$ARCHIVE" "$ARCHIVE.sha256" --clobber

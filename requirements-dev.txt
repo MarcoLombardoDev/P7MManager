@@ -4,3 +4,4 @@
 -r requirements.txt
 pytest>=8.0
 ruff>=0.5
+Pillow>=10.0    # tools/make_icon.py, and the test that checks the committed icons
