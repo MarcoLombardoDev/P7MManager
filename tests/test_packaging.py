@@ -33,26 +33,33 @@ def test_the_icons_are_committed(name: str):
     assert (ICONS / name).is_file()
 
 
+#: The committed icons were drawn with this face. Another serif — Times New
+#: Roman on a Windows or macOS runner — is metric-compatible but not
+#: pixel-identical, so comparing against it would fail on a correct file.
+LIBERATION_SERIF = (
+    Path("/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf"),
+    Path("/usr/share/fonts/liberation/LiberationSerif-Regular.ttf"),
+)
+
+
 def test_the_icons_are_what_the_script_draws():
     """Regenerate and compare, so "run it again and diff" can be trusted."""
     pytest.importorskip("PIL")
+    if not any(path.exists() for path in LIBERATION_SERIF):
+        pytest.skip("the committed icons are drawn with Liberation Serif")
+
     import sys
     import tempfile
 
     sys.path.insert(0, str(ROOT / "tools"))
     try:
         import make_icon
-    except SystemExit:  # pragma: no cover - no serif font on this machine
-        pytest.skip("no serif font installed")
     finally:
         sys.path.pop(0)
 
     with tempfile.TemporaryDirectory() as temporary:
         out = Path(temporary)
-        try:
-            make_icon.write_icons("P", out, "p7mmanager")
-        except SystemExit as exc:  # pragma: no cover - font missing
-            pytest.skip(str(exc))
+        make_icon.write_icons("P", out, "p7mmanager")
         for name in ("p7mmanager.png", "p7mmanager.ico", "p7mmanager.icns"):
             assert (out / name).read_bytes() == (ICONS / name).read_bytes(), (
                 f"{name} differs from what tools/make_icon.py draws; "
