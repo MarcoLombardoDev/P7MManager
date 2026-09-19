@@ -110,7 +110,15 @@ def test_claude_md_states_the_branch_and_attribution_rules():
 
 #: Import names that are not the name of the distribution providing them.
 #: Short enough to keep by hand; anything not here is assumed to match.
-DISTRIBUTION_OF = {"PIL": "Pillow", "yaml": "pyyaml"}
+#:
+#: ``PySide6`` is the interesting one: the import name is provided by three
+#: different distributions, and requirements.txt asks for the one that carries
+#: QtCore, QtGui and QtWidgets without dragging Addons along.
+DISTRIBUTION_OF = {
+    "PIL": "Pillow",
+    "yaml": "pyyaml",
+    "PySide6": "PySide6-Essentials",
+}
 
 #: Imported from tools/ after the test module puts that directory on the path.
 LOCAL_MODULES = {"p7mmanager", "collect_licences", "licence_inventory", "make_icon"}

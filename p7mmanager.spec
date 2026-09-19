@@ -14,8 +14,12 @@
 # exception into the archive. That combination is the one a redistribution
 # licence cannot survive; see COMMERCIAL-LICENSE.md.
 
+import os
 import sys
 from pathlib import Path
+
+sys.path.insert(0, os.path.join(SPECPATH, "tools"))  # noqa: F821 - PyInstaller
+from collect_licences import collect as collect_licences  # noqa: E402
 
 block_cipher = None
 
@@ -61,6 +65,26 @@ a = Analysis(
     ],
     cipher=block_cipher,
     noarchive=False,
+)
+
+# Everything in this bundle is being redistributed, and most of it asks for
+# its terms to travel with the binary. The texts are staged here rather than by
+# the release workflow because only this file has ``a.binaries`` -- the list of
+# what PyInstaller actually resolved on this machine -- and that list is the
+# only way to reach the system libraries. Running the collector as a separate
+# step outside the build, which is what happened until now, produced a tree
+# covering the wheels and nothing else: an archive with roughly eighty system
+# libraries in it and not one of their licence files, several of them LGPL-2.1
+# whose §6 wants a copy of the licence with the object code, and §11 of
+# COMMERCIAL-LICENSE.md promising the recipient exactly that.
+#
+# The tree is not added to ``a.datas``: the release workflow copies it to the
+# root of the archive, where somebody looking for it can see it, instead of
+# burying it under _internal/.
+collect_licences(
+    SPECPATH,  # noqa: F821 - injected by PyInstaller
+    os.path.join(SPECPATH, "build", "licenses"),  # noqa: F821
+    a.binaries,
 )
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)

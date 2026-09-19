@@ -183,24 +183,11 @@ jobs:
       # Where the build put its output, and which file inside it is the
       # program. Decided once, here, so the smoke test and the packaging step
       # cannot end up disagreeing about what ships.
-      # Until this existed an archive carried P7M Manager's own LICENSE,
-      # COMMERCIAL-LICENSE.md, README and CHANGELOG — and not one line of
-      # Qt's. PySide6 is the only runtime dependency, which makes it nearly
-      # the whole third-party surface of a build, and it is **LGPL-3.0**:
-      # §4 asks for the licence text to accompany the object code, in as many
-      # words. The wheels declare LGPL-3.0 in their metadata and then ship no
-      # licence file at all, so the text has to come from `licenses/` in this
-      # repository — together with GPL-3.0, since LGPL-3.0 is a set of
-      # additional permissions on top of it and means nothing alone.
+      # The licence texts are already staged in build/licenses: p7mmanager.spec
+      # assembles them during the build, because only the spec has the list of
+      # what PyInstaller actually resolved on this machine and that list is the
+      # only route to the system libraries. See the comment there.
       #
-      # Run after the build rather than from the .spec file: what to collect
-      # is read out of installed metadata and checked against PyInstaller's
-      # own record of what it collected, and that record does not exist until
-      # Analysis has run.
-      - name: Collect the licence texts
-        shell: bash
-        run: python tools/collect_licences.py build/licenses
-
       # What the archive actually contains, attributed binary by binary,
       # written on the machine that built it — the only one whose answer is
       # this download's own, since PyInstaller collects whatever this image's

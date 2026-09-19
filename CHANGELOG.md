@@ -24,10 +24,30 @@ Alignment with the conventions the other six products in this family follow.
 - **A per-platform inventory of what the bundle contains**, generated on the
   machine that built it — the only one whose answer is that download's own,
   since PyInstaller collects whatever that linker resolved. A Linux build
-  comes to 217 native binaries, all attributed. `tools/collect_licences.py`
+  comes to 201 native binaries, all attributed. `tools/collect_licences.py`
   and `tools/licence_inventory.py` do it, and the release job runs the
   inventory with `--licences` so a distribution that ships a binary and no
   notice fails the job rather than shipping.
+- **The terms of the system libraries the build machine contributes.** The
+  licence tree is assembled from inside `p7mmanager.spec` now, because only
+  the spec file has `a.binaries` — PyInstaller's record of what it actually
+  resolved on that machine — and that list is the only route to them. Run as a
+  separate step outside the build, which is how it started, the collector saw
+  installed Python metadata and nothing else: it produced a tree covering the
+  wheels while the archive carried eighty-odd system libraries with none of
+  their licence files, twenty-one of them LGPL-2.0 or LGPL-2.1 whose §6 wants a
+  copy of the licence with the object code — and §11 of COMMERCIAL-LICENSE.md
+  promising the recipient exactly that. A Linux build's tree is 91 files, 83 of
+  them those records.
+
+### Changed
+
+- **The dependency is `PySide6-Essentials`, not the `PySide6` metapackage.**
+  The metapackage brings PySide6-Addons with it, and this program imports
+  QtCore, QtGui and QtWidgets and nothing else. Addons was eighteen further Qt
+  libraries in every archive, each of them an object carrying LGPL-3.0
+  obligations, covering modules no line of code here can reach. A Linux build
+  falls from 217 native binaries to 201.
 - `THIRD-PARTY-LICENSES.md`, which the repository did not have.
 - `tests/test_docs.py`, `tests/test_release_workflow.py` and
   `tests/test_third_party_licences.py` — the three shared guard suites P7M

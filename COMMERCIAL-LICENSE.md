@@ -362,8 +362,10 @@ something this licence, or a wheel, can grant.
 **A build is more than this table, and you do not have to take the difference on trust.**
 A frozen bundle contains the transitive closure of everything those packages link — Qt's
 own libraries and plugins, the CPython interpreter, and whatever the build machine's
-linker resolved. A Linux build of 1.0.0 contained **217 native binaries**: 108 from wheels
-(105 of them Qt), 86 from the build machine, 23 CPython extension modules.
+linker resolved. A Linux build of 1.1.0 contains **201 native binaries**: 90 from wheels
+(87 of them Qt), 87 from the build machine, 24 CPython extension modules. 1.0.0 had 217,
+and the difference is Qt: it depended on the `PySide6` metapackage, which brings
+PySide6-Addons with it, and this program imports nothing from Addons.
 
 **Every one of them is inventoried in the archive you receive.** Each release carries
 `licenses/`, holding the licence text of everything in the bundle and a per-platform
@@ -376,12 +378,15 @@ what the obligations amount to.
 What a redistributor inherits, beyond the table above:
 
 - **Qt, and the LGPL-3.0 row above is the whole of it.** §4 wants the licence text with
-  the object code — it is in `licenses/python/PySide6/`, together with GPL-3.0, because
+  the object code — it is in `licenses/python/PySide6_Essentials/`, together with
+  GPL-3.0, because
   LGPL-3.0 is a set of additional permissions on top of it and means nothing alone — and
   the recipient must be able to relink. These are folder builds: every Qt library is an
   ordinary file in the unpacked archive, so replacing one is overwriting a file.
-- **The LGPL-2.0 and LGPL-2.1 system libraries** a Linux build collects — 22 of them in
-  1.0.0, the ATK and cairo families among them. Same two obligations, same answer.
+- **The LGPL-2.0 and LGPL-2.1 system libraries** a Linux build collects — 21 of them in
+  1.1.0, the ATK, cairo, GLib and pango families among them. Same two obligations, same
+  answer, and the build machine's own `debian/copyright` record for each is in
+  `licenses/system/`.
 - **`libgcc_s`, `libstdc++` and `libobjc`**, GPL-3.0-or-later **with the
   GCC Runtime Library Exception**. That exception is what makes them harmless: it exists
   so a program compiled with GCC is not made GPL by linking them.

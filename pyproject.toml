@@ -28,7 +28,7 @@ classifiers = [
   "Topic :: Utilities",
 ]
 dependencies = [
-  "PySide6>=6.6",
+  "PySide6-Essentials>=6.6",
 ]
 
 [project.optional-dependencies]

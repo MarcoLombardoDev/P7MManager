@@ -3,4 +3,10 @@
 # X.509 readers are written against the standard library, so the parsing side
 # runs on a plain Python install and carries no copyleft dependency into a
 # redistributed build. Qt is the interface, and nothing else.
-PySide6>=6.6
+#
+# PySide6-Essentials and not the PySide6 metapackage. The metapackage installs
+# Essentials, Addons and shiboken6 together, and this program imports QtCore,
+# QtGui and QtWidgets and nothing else -- so Addons was a second copy of Qt's
+# obligations in the archive covering modules no line of code here can reach.
+# The full PySide6 package also works if it is already installed.
+PySide6-Essentials>=6.6
