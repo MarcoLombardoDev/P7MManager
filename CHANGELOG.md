@@ -4,6 +4,64 @@ All notable changes to P7M Manager are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Alignment with the conventions the other six products in this family follow.
+
+### Added
+
+- **The third-party licence texts travel inside the archive.** Until now a
+  release carried P7M Manager's own LICENSE, COMMERCIAL-LICENSE.md, README and
+  CHANGELOG — and not one line of Qt's. That is not an untidiness: PySide6 is
+  the only runtime dependency and therefore nearly the whole third-party
+  surface of a build, and Qt is **LGPL-3.0**, whose §4 asks for the licence
+  text to accompany the object code in as many words. The PySide6 wheels
+  declare LGPL-3.0 and then ship no licence file at all, so the text is
+  supplied from `licenses/` in this repository, together with GPL-3.0, because
+  LGPL-3.0 is a set of additional permissions on top of it and means nothing
+  alone. CPython's own notice goes in too: the interpreter and standard
+  library are frozen into the bundle and PSF-2.0 asks for it.
+- **A per-platform inventory of what the bundle contains**, generated on the
+  machine that built it — the only one whose answer is that download's own,
+  since PyInstaller collects whatever that linker resolved. A Linux build
+  comes to 217 native binaries, all attributed. `tools/collect_licences.py`
+  and `tools/licence_inventory.py` do it, and the release job runs the
+  inventory with `--licences` so a distribution that ships a binary and no
+  notice fails the job rather than shipping.
+- `THIRD-PARTY-LICENSES.md`, which the repository did not have.
+- `tests/test_docs.py`, `tests/test_release_workflow.py` and
+  `tests/test_third_party_licences.py` — the three shared guard suites P7M
+  Manager was missing.
+- `.gitattributes`, a pull-request template and an issue chooser.
+
+### Fixed
+
+- **`packaging/start.cmd` shipped with Unix line endings.** It is read by
+  `cmd.exe`, it uses `goto` seven times, and `goto` with LF-only endings is
+  the classic way a batch file fails in front of a user and nowhere else.
+  Orion, XIP and Argus all ship theirs with CRLF; this one did not, and
+  nothing pinned it. `.gitattributes` now does, for the file and for every
+  checkout, and a test fails if either launcher's endings drift.
+- Every job in both workflows declares a `timeout-minutes`. Without one they
+  inherit GitHub's six-hour default, which is what a hung Qt test looks like
+  from the outside: nothing, for an afternoon.
+- Fifteen files under `tests/` and `tools/` carried a four-line licence header
+  where the other thirty-three had five, missing the warranty disclaimer. All
+  forty-eight are now identical.
+- The README never linked `CLA.md`, though contributions require one.
+
+### Changed
+
+- The README follows the section skeleton the other products share, so a
+  reader who has found something in one knows where to look here. The two
+  sections that are P7M Manager's own — the privacy statement and what the
+  tool does not claim — are kept, as subsections where they belong.
+- **§11 of the commercial licence says what a redistributor actually
+  receives**, now that it is true: the inventory, the licence tree, the
+  obligations Qt and the LGPL system libraries carry, the GCC Runtime Library
+  Exception, the Windows CRT, and the GPL-3 library the spec keeps out. It
+  used to tell a redistributor to go and inventory the build themselves.
+
 ## [1.0.0] — 2026-09-17
 
 First release.

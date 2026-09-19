@@ -3,6 +3,7 @@
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Commercial Licence Available](https://img.shields.io/badge/Commercial%20Licence-Available-green.svg)](COMMERCIAL-LICENSE.md)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![CI](https://github.com/MarcoLombardoDev/P7MManager/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcoLombardoDev/P7MManager/actions/workflows/ci.yml)
 
 A desktop tool for `.p7m` files: see what is inside them, who signed them and when, and get
 the document back out. One file or a whole folder tree, worked through as a queue.
@@ -28,18 +29,20 @@ cannot drift away from what the window actually draws.
 ## Table of Contents
 
 1. [What P7M Manager is](#what-p7m-manager-is)
-2. [Your documents never leave your machine](#your-documents-never-leave-your-machine)
-3. [What this tool does not claim](#what-this-tool-does-not-claim)
-4. [Features](#features)
-5. [Installation](#installation)
-6. [Using the window](#using-the-window)
-7. [Using the command line](#using-the-command-line)
-8. [How it works](#how-it-works)
-9. [Requirements](#requirements)
-10. [Development](#development)
-11. [Building a standalone executable](#building-a-standalone-executable)
-12. [Troubleshooting](#troubleshooting)
-13. [Licence and commercial licensing](#licence-and-commercial-licensing)
+2. [Features](#features)
+3. [Download](#download)
+4. [Installation from source](#installation-from-source)
+5. [Usage](#usage)
+6. [How it works](#how-it-works)
+7. [Requirements](#requirements)
+8. [Development](#development)
+9. [Testing](#testing)
+10. [Building a standalone executable](#building-a-standalone-executable)
+11. [Troubleshooting](#troubleshooting)
+12. [Scope and limitations](#scope-and-limitations)
+13. [License & Commercial Licensing](#license--commercial-licensing)
+14. [Contributing](#contributing)
+15. [Disclaimer](#disclaimer)
 
 ---
 
@@ -62,7 +65,7 @@ P7M Manager does three things with such a file:
 Point it at a single file, or at a folder with five hundred of them: everything goes into a
 queue that runs on several threads, and each row says what happened.
 
-## Your documents never leave your machine
+### Your documents never leave your machine
 
 A `.p7m` is rarely something trivial. It is a contract, an invoice, a court filing, a
 letter carrying somebody's personal data — material you are often not free, and sometimes
@@ -107,7 +110,7 @@ assess, no data-processing agreement to sign, no retention policy to read, and n
 on somebody else's infrastructure that could involve your documents. The file stays where
 it already was.
 
-## What this tool does not claim
+### What this tool does not claim
 
 **P7M Manager is not a legal validation service, and nothing it reports is a legal
 validation of a signature.**
@@ -168,9 +171,7 @@ is good for is the question those services answer slowly and this one answers in
 - English and Italian
 - A command line covering the same engine, for scheduled tasks
 
-## Installation
-
-### Download a build
+## Download
 
 The [releases page](https://github.com/MarcoLombardoDev/P7MManager/releases) carries a
 build for each platform. Nothing needs installing: unpack it and run it.
@@ -208,7 +209,9 @@ which is what makes it worth checking:
 sha256sum P7MManager-1.0.0-linux-x64.tar.gz    # compare with the release page
 ```
 
-### From source
+## Installation from source
+
+### From a clone
 
 ```bash
 git clone https://github.com/MarcoLombardoDev/P7MManager.git
@@ -227,7 +230,9 @@ p7mmanager                         # the window
 p7m --help                         # the console tool
 ```
 
-## Using the window
+## Usage
+
+### Using the window
 
 1. **Add files** or **Add folder** — or drag either onto the window.
 2. Choose where the extracted documents go: beside the original, into one folder, or into a
@@ -239,7 +244,7 @@ p7m --help                         # the console tool
 Tick **Analyse only** to inspect a folder without writing anything — useful for finding out
 what is in an archive before touching it.
 
-## Using the command line
+### Using the command line
 
 The console tool covers the same engine, and the `-r` and `-d` flags behave as they did in
 the PowerShell and Python scripts this tool replaces:
@@ -294,15 +299,27 @@ drive the same code, and a test fails if a Qt import ever appears under `core/`.
 
 ```bash
 pip install -r requirements-dev.txt
-pytest                             # the whole suite
 ruff check .
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [CLAUDE.md](CLAUDE.md). Contributions need a
+signed [Contributor Licence Agreement](CLA.md) — see [Contributing](#contributing) below.
+
+## Testing
+
+```bash
+pytest                             # the whole suite
+pytest tests/test_docs.py -q       # the documentation guards alone, in seconds
 ```
 
 The test fixtures are real containers, signed by the `openssl` binary when the tests are
 collected rather than committed as blobs. Where OpenSSL is missing those tests skip and the
 rest still run.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) and [CLAUDE.md](CLAUDE.md).
+Four of the suites check this repository rather than the program: `test_docs.py` holds the
+documents to each other, `test_release_workflow.py` holds the workflow that publishes a
+release, `test_packaging.py` holds the icons and the spec, and
+`test_third_party_licences.py` holds what the archive says about everybody else's code.
 
 ## Building a standalone executable
 
@@ -341,7 +358,18 @@ integrity check still applies; the signature itself was not checked.
 `sudo apt install libegl1 libgl1 libxkbcommon0 libfontconfig1`. Check with
 `python -m p7mmanager --self-check`.
 
-## Licence and commercial licensing
+## Scope and limitations
+
+What this tool does and does not claim is in
+[What this tool does not claim](#what-this-tool-does-not-claim), above: it checks
+integrity and, for RSA, the signature itself, and it is not a legal validation service.
+
+The engine reads containers; it never writes one. A `.p7m` opened here is opened
+read-only, and nothing in this program can alter, re-sign or re-wrap a signed document.
+
+---
+
+## License & Commercial Licensing
 
 P7M Manager is open-source software released under the
 **[GNU Affero General Public License v3.0](LICENSE)**.
@@ -362,7 +390,7 @@ no paid edition, no feature gate, no licence key, no seat limit and no phone-hom
 
 The dividing line is one rule: **AGPL-3.0 is free as long as the source stays open.**
 
-### Commercial licensing
+### Commercial Licensing
 
 The commercial offer removes the copyleft obligation, and nothing else. It splits into two
 branches that answer different questions — **Commercial**, sized by how big the organisation
@@ -415,6 +443,39 @@ component review: **[COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md)**. Enquiries 
 
 ---
 
+## Contributing
+
+Contributions are welcome. All contributors must agree to the
+[Contributor License Agreement (CLA)](CLA.md) before a Pull Request can be merged: the
+commercial licence above is only possible if one party can license the whole work both
+ways, and the CLA is what makes that true.
+
+> **To agree:** include
+> `I have read and agree to the Contributor License Agreement (CLA.md).`
+> in your Pull Request description. Your first Pull Request constitutes your agreement.
+
+Practical expectations:
+
+- Never commit a real `.p7m`. The test fixtures are generated and signed at collection
+  time by `openssl`, precisely so that no signed document of anybody's ends up in this
+  history.
+- Every bug fix arrives with a test that fails without the fix.
+- Bump the version only in `p7mmanager/__init__.py`, and add a `CHANGELOG.md` entry.
+- **The engine keeps its zero dependencies.** `p7mmanager/core/` is written against the
+  standard library, and that is what lets this be offered under a commercial licence at
+  all: a copyleft crypto stack in there would make the offer undeliverable.
+
+[`CONTRIBUTING.md`](CONTRIBUTING.md) covers the process in full.
+
+---
+
+## Disclaimer
+
 *P7M Manager is provided as is, without warranty of any kind. It checks integrity and, for
 RSA, the signature itself — it does not validate signatures legally. See
 [What this tool does not claim](#what-this-tool-does-not-claim).*
+
+**It is not a qualified validation service.** A legally binding verification of an Italian
+digital signature is something an accredited provider does, against the trust lists and at
+the time the signature was made. This program reads the container and tells you what is in
+it.

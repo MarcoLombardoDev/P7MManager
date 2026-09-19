@@ -82,3 +82,47 @@ to say. Anything that blurs it is a bug, not a feature.
   as in Orion. Code and comments are written in English.
 - `tests/` — pytest. The fixtures are real containers, signed with OpenSSL at
   collection time, not committed blobs.
+
+## What travels in the archive besides the program
+
+Three things, and two of them arrived late:
+
+- **`licenses/`** — the terms of everything in the bundle. `P7MManager-LICENSE.txt`,
+  CPython's from `licenses/` in this repository, PyInstaller's `COPYING.txt` for the
+  bootloader that *is* shipped, and — the point of the whole exercise — **LGPL-3.0 and
+  GPL-3.0 under `python/PySide6/`**, supplied on the wheel's behalf because the PySide6
+  wheels declare LGPL-3.0 in their metadata and then ship no licence file at all.
+
+  Until 1.1.0 an archive carried this program's own LICENSE, COMMERCIAL-LICENSE.md,
+  README and CHANGELOG, and **not one line of Qt's**. PySide6 is the only runtime
+  dependency, so it is nearly the whole third-party surface of a build, and LGPL-3.0 §4
+  asks for the text to accompany the object code in as many words. This was the one real
+  compliance defect in the repository.
+
+- **`licenses/THIRD-PARTY-LICENSES-<platform>.md`** — which binary belongs to which
+  project, written by `tools/licence_inventory.py` on the runner that built that archive.
+  It has to be that machine: PyInstaller collects whatever the linker there resolved.
+  Run with `--licences` pointed at the tree about to be packaged, so a distribution that
+  puts a binary in the bundle and no notice beside it is reported.
+
+  **Exit code 2 means "written, and some rows need a human".** Anything else means the
+  script did not finish and the job fails. Argus's first release run swallowed exactly
+  that: the script raised on every machine without dpkg, `|| echo ::warning::` turned the
+  crash into a warning, and two platforms published with no inventory at all.
+
+- **the launcher and the executable's digest** — `start.cmd` on Windows, `start.sh` on
+  Linux, the same `start.sh` as `start.command` on macOS.
+
+  **`start.cmd` must keep CRLF.** It uses `goto` seven times, and `cmd.exe` with LF-only
+  endings is the classic way a batch file fails in front of a user and nowhere else. It
+  shipped that way until 1.1.0 because nothing pinned it; `.gitattributes` now does, and
+  `tests/test_release_workflow.py` fails if either launcher's endings drift.
+
+## Two names, and they are not interchangeable
+
+`APP_NAME` in the release workflow is **P7MManager** — PyInstaller's output path, the
+executable, and the archive names, because it is also typed at a prompt. `FOLDER_NAME` is
+**P7M Manager**, what the archive unpacks to, because that is the folder somebody ends up
+with on their desktop. Every other product in this family has one name and never had to
+notice the difference; here, a test holds both, and the mailto subjects have to be
+percent-encoded because of the space.

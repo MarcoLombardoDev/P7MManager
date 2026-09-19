@@ -58,6 +58,10 @@ jobs:
   release:
     name: Prepare the release
     runs-on: ubuntu-latest
+    # Every job says how long it may take. Without this they inherit GitHub's
+    # six-hour default, and a hung build looks like nothing at all from the
+    # outside for the rest of the afternoon.
+    timeout-minutes: 10
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
       version: ${{ steps.tag.outputs.version }}
@@ -131,6 +135,7 @@ jobs:
     name: ${{ matrix.label }}
     needs: release
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -178,6 +183,53 @@ jobs:
       # Where the build put its output, and which file inside it is the
       # program. Decided once, here, so the smoke test and the packaging step
       # cannot end up disagreeing about what ships.
+      # Until this existed an archive carried P7M Manager's own LICENSE,
+      # COMMERCIAL-LICENSE.md, README and CHANGELOG — and not one line of
+      # Qt's. PySide6 is the only runtime dependency, which makes it nearly
+      # the whole third-party surface of a build, and it is **LGPL-3.0**:
+      # §4 asks for the licence text to accompany the object code, in as many
+      # words. The wheels declare LGPL-3.0 in their metadata and then ship no
+      # licence file at all, so the text has to come from `licenses/` in this
+      # repository — together with GPL-3.0, since LGPL-3.0 is a set of
+      # additional permissions on top of it and means nothing alone.
+      #
+      # Run after the build rather than from the .spec file: what to collect
+      # is read out of installed metadata and checked against PyInstaller's
+      # own record of what it collected, and that record does not exist until
+      # Analysis has run.
+      - name: Collect the licence texts
+        shell: bash
+        run: python tools/collect_licences.py build/licenses
+
+      # What the archive actually contains, attributed binary by binary,
+      # written on the machine that built it — the only one whose answer is
+      # this download's own, since PyInstaller collects whatever this image's
+      # linker resolved.
+      - name: Inventory what the bundle ships
+        shell: bash
+        run: |
+          set +e
+          python tools/licence_inventory.py \
+            --bundle "${{ matrix.asset }}=build/$APP_NAME" \
+            --licences build/licenses \
+            --markdown "build/licenses/THIRD-PARTY-LICENSES-${{ matrix.asset }}.md"
+          status=$?
+          set -e
+
+          # 2 means the report was written and some rows in it need a human.
+          # Anything else means the script did not finish, and the archive
+          # would ship without the inventory it is supposed to carry. Argus's
+          # first release run swallowed exactly that: the script raised on
+          # every machine without dpkg, `|| echo ::warning::` turned the crash
+          # into a warning, and two platforms published without it.
+          case "$status" in
+            0) ;;
+            2) echo "::warning::some binaries could not be attributed, or a "\
+                    "distribution shipped no notice; see the report" ;;
+            *) echo "::error::the inventory script exited $status without writing a report"
+               exit "$status" ;;
+          esac
+
       - name: Locate what was built
         id: built
         shell: bash
@@ -310,6 +362,12 @@ jobs:
           # A downloader who never opens the repository has no other copy of
           # the terms, and AGPL-3.0 section 5 asks for them to travel with it.
           cp LICENSE COMMERCIAL-LICENSE.md README.md CHANGELOG.md "$root/"
+
+          # And everybody else's terms, which is the larger obligation: Qt is
+          # LGPL-3.0 and its §4 asks for the text to accompany the object code.
+          # The per-platform inventory of which binary belongs to which project
+          # is in there too, generated on this runner a few steps above.
+          cp -R build/licenses "$root/licenses"
 
           # Written in the format `sha256sum -c` reads, with the name relative
           # to the file itself, so the archive can also be checked with a tool
@@ -481,6 +539,7 @@ jobs:
     name: Write the checksums into the notes
     needs: [release, build]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/download-artifact@v4
         with:

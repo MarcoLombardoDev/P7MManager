@@ -359,18 +359,50 @@ The PyPI wheels for PySide6 *are* the open-source build of Qt; their metadata of
 commercial option. A Qt commercial licence is bought from The Qt Company and is not
 something this licence, or a wheel, can grant.
 
-**A build is more than this table.** A frozen bundle contains the transitive closure of
-everything those packages link — Qt's own libraries and plugins, and whatever the build
-machine's linker resolved. Two consequences are worth stating because they bit Orion:
+**A build is more than this table, and you do not have to take the difference on trust.**
+A frozen bundle contains the transitive closure of everything those packages link — Qt's
+own libraries and plugins, the CPython interpreter, and whatever the build machine's
+linker resolved. A Linux build of 1.0.0 contained **217 native binaries**: 108 from wheels
+(105 of them Qt), 86 from the build machine, 23 CPython extension modules.
 
-- The standard library's optional `readline` extension drags in a **GPL-3.0-or-later
-  library with no linking exception**, which is the one combination a Redistribution tier
-  cannot survive. `p7mmanager.spec` excludes it, and nothing in P7M Manager uses it.
-- A redistributor must inventory what they actually ship, from the archives they build,
-  and reproduce the notices each component requires.
+**Every one of them is inventoried in the archive you receive.** Each release carries
+`licenses/`, holding the licence text of everything in the bundle and a per-platform
+`THIRD-PARTY-LICENSES-<platform>.md` attributing each binary to the project that shipped
+it, with the evidence each attribution rests on. It is generated on the machine that built
+that archive, because PyInstaller collects whatever *that* linker resolved.
+[THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md) in the repository explains how, and
+what the obligations amount to.
 
-These determinations were made from package metadata, are current as at the version of this
-document, and are **not a legal opinion**. Verify them against the versions you ship.
+What a redistributor inherits, beyond the table above:
+
+- **Qt, and the LGPL-3.0 row above is the whole of it.** §4 wants the licence text with
+  the object code — it is in `licenses/python/PySide6/`, together with GPL-3.0, because
+  LGPL-3.0 is a set of additional permissions on top of it and means nothing alone — and
+  the recipient must be able to relink. These are folder builds: every Qt library is an
+  ordinary file in the unpacked archive, so replacing one is overwriting a file.
+- **The LGPL-2.0 and LGPL-2.1 system libraries** a Linux build collects — 22 of them in
+  1.0.0, the ATK and cairo families among them. Same two obligations, same answer.
+- **`libgcc_s`, `libstdc++` and `libobjc`**, GPL-3.0-or-later **with the
+  GCC Runtime Library Exception**. That exception is what makes them harmless: it exists
+  so a program compiled with GCC is not made GPL by linking them.
+- **On Windows, the Microsoft Visual C++ and Universal CRT runtime**, redistributable
+  under Microsoft's own terms rather than an open-source licence, so there is no text to
+  reproduce.
+- **CPython itself**, PSF-2.0, whose notice is in `licenses/cpython/`.
+
+And one that is deliberately absent: the standard library's optional `readline` extension
+links **libreadline**, GPL-3.0-or-later **with no linking exception**, which is the one
+combination a Redistribution tier cannot survive. `p7mmanager.spec` excludes it and
+`rlcompleter` with it, nothing in P7M Manager uses either, and a test fails if the
+exclusion is removed.
+
+Nothing here sublicenses any of it. A commercial licence to P7M Manager is a licence to
+P7M Manager's own code; everybody else's terms continue to apply on their own terms, which
+is why the texts travel with the build rather than being summarised.
+
+These determinations were made from package metadata and from the build machine's own
+records, are current as at the version of this document, and are **not a legal opinion**.
+Verify them against the versions you ship.
 
 ---
 
