@@ -36,6 +36,11 @@ First release.
   behaviour of the PowerShell and Python scripts this tool replaces.
 - **English and Italian**, with a test that fails on any interface phrase missing its
   Italian.
+- **Privacy as a checked property, not a claim.** The documents never leave the machine
+  because the application opens no network connections at all: `tests/test_privacy.py`
+  fails if any networking module is ever imported, and runs a full analysis and extraction
+  with sockets made unusable. The README says what is written to disk, so the list is
+  complete.
 - **Downloadable builds.** A release workflow builds a Windows executable, a macOS bundle
   and a Linux binary on their own runners, smoke-tests each one — `--self-check` brings up
   Qt and reports which platform plugin it loaded, because a bundle missing its plugin

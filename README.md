@@ -28,17 +28,18 @@ cannot drift away from what the window actually draws.
 ## Table of Contents
 
 1. [What P7M Manager is](#what-p7m-manager-is)
-2. [What this tool does not claim](#what-this-tool-does-not-claim)
-3. [Features](#features)
-4. [Installation](#installation)
-5. [Using the window](#using-the-window)
-6. [Using the command line](#using-the-command-line)
-7. [How it works](#how-it-works)
-8. [Requirements](#requirements)
-9. [Development](#development)
-10. [Building a standalone executable](#building-a-standalone-executable)
-11. [Troubleshooting](#troubleshooting)
-12. [Licence and commercial licensing](#licence-and-commercial-licensing)
+2. [Your documents never leave your machine](#your-documents-never-leave-your-machine)
+3. [What this tool does not claim](#what-this-tool-does-not-claim)
+4. [Features](#features)
+5. [Installation](#installation)
+6. [Using the window](#using-the-window)
+7. [Using the command line](#using-the-command-line)
+8. [How it works](#how-it-works)
+9. [Requirements](#requirements)
+10. [Development](#development)
+11. [Building a standalone executable](#building-a-standalone-executable)
+12. [Troubleshooting](#troubleshooting)
+13. [Licence and commercial licensing](#licence-and-commercial-licensing)
 
 ---
 
@@ -60,6 +61,51 @@ P7M Manager does three things with such a file:
 
 Point it at a single file, or at a folder with five hundred of them: everything goes into a
 queue that runs on several threads, and each row says what happened.
+
+## Your documents never leave your machine
+
+A `.p7m` is rarely something trivial. It is a contract, an invoice, a court filing, a
+letter carrying somebody's personal data — material you are often not free, and sometimes
+not legally permitted, to hand to a third party. So how a tool treats the file matters as
+much as what it gets out of it.
+
+P7M Manager is a desktop application, and that is the whole of its privacy design:
+
+- **Nothing is uploaded.** Parsing, verification and extraction all happen in this process,
+  on your machine. The container is opened read-only and never modified or moved; the
+  extracted document is written where you said and nowhere else.
+- **Nothing is sent, because nothing can be.** The application opens no network connections
+  at all. It imports no networking module — not `socket`, not `urllib.request`, not Qt's
+  own network classes — and `tests/test_privacy.py` fails if one ever appears. Another test
+  runs a full analysis and extraction with sockets made unusable, so the engine is known to
+  work on a machine with the cable pulled out.
+- **No account, no licence key, no activation.** There is nothing to sign into and nothing
+  to register. The software behaves identically whether or not anyone has paid for a
+  commercial licence.
+- **No telemetry, no analytics, no crash reporting.** Not disabled by default — absent.
+- **Verifiable rather than promised.** The source is AGPL-3.0, so the claims above can be
+  read rather than believed; and since the application is a local process, a firewall rule
+  or an air-gapped machine settles the question without reading anything at all.
+
+**What it does write to disk**, so that this list is complete: your preferences, in a JSON
+file under the usual configuration directory for your platform; a rotating local log of
+what the application did — paths and errors, never the contents of a document; and the
+documents you asked it to extract. All of it stays on your machine, and deleting the
+configuration directory removes the first two.
+
+### Why this is not a small point
+
+A .p7m cannot be opened by an ordinary PDF reader, so the usual next step is an online
+converter: upload the file, get the document back. That is not a criticism of any
+particular service — it is simply what uploading means. The document reaches a machine you
+do not control, and for anything under professional secrecy, a non-disclosure agreement or
+the GDPR, that transfer is a decision someone has to be in a position to make, document and
+justify.
+
+A desktop tool removes the question rather than answering it. There is no processor to
+assess, no data-processing agreement to sign, no retention policy to read, and no incident
+on somebody else's infrastructure that could involve your documents. The file stays where
+it already was.
 
 ## What this tool does not claim
 
