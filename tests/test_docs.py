@@ -394,11 +394,13 @@ def test_licensing_documents_are_reachable_from_the_readme(document):
 class TestThirdPartySection:
     """§11 is what a buyer reads before signing, so it has to be true.
 
-    For P7M Manager it has to answer two questions a summary of the dependency list
-    does not: what is *not* in the archive (the browser -- Google Chrome, which
-    the user installs themselves, so a redistributor of P7M Manager is not a
-    redistributor of Chrome), and what is (a complete Node.js runtime, because
-    that is Playwright's driver and cannot be separated from it).
+    requirements.txt names one dependency, which makes a summary of it a
+    misleading answer to what a redistributor is taking on. The archive holds
+    two hundred-odd native binaries: Qt under LGPL-3.0 with obligations that
+    outlive the sale, the system libraries the runner linked against, and
+    CPython, which is frozen in and appears in no dependency list anywhere.
+    §11 has to describe that, and say which of it P7M Manager is in a position
+    to license and which of it it is not.
     """
 
     @pytest.fixture(scope="class")
