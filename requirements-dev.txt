@@ -5,3 +5,9 @@
 pytest>=8.0
 ruff>=0.5
 Pillow>=10.0    # tools/make_icon.py, and the test that checks the committed icons
+
+# tests/test_release_workflow.py parses the workflow files. It imports PyYAML
+# outright rather than skipping without it: those checks guard the workflow
+# that publishes the releases, and a run that silently omitted them would
+# finish green while proving nothing.
+pyyaml>=6

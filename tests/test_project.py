@@ -108,6 +108,57 @@ def test_claude_md_states_the_branch_and_attribution_rules():
     assert "MarcoLombardoDev" in text
 
 
+#: Import names that are not the name of the distribution providing them.
+#: Short enough to keep by hand; anything not here is assumed to match.
+DISTRIBUTION_OF = {"PIL": "Pillow", "yaml": "pyyaml"}
+
+#: Imported from tools/ after the test module puts that directory on the path.
+LOCAL_MODULES = {"p7mmanager", "collect_licences", "licence_inventory", "make_icon"}
+
+
+def test_requirements_dev_declares_everything_the_tests_import():
+    """A test file and the line that installs its dependency travel together.
+
+    They did not here: tests/test_release_workflow.py arrived with an outright
+    ``import yaml`` and requirements-dev.txt was not told, so CI stopped at
+    collection and ran none of the suite. The developer machine had PyYAML for
+    other reasons and said nothing, which is exactly the shape of failure a
+    dependency list exists to prevent.
+    """
+    import ast
+    import sys
+
+    declared = {
+        line.split("#")[0].strip().split(">=")[0].split("==")[0].strip().lower()
+        for text in (
+            (ROOT / "requirements.txt").read_text(encoding="utf-8"),
+            (ROOT / "requirements-dev.txt").read_text(encoding="utf-8"),
+        )
+        for line in text.splitlines()
+        if line.strip() and not line.lstrip().startswith(("#", "-"))
+    }
+
+    imported = set()
+    for path in sorted((ROOT / "tests").glob("*.py")):
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            if isinstance(node, ast.Import):
+                imported.update(alias.name.split(".")[0] for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and not node.level and node.module:
+                imported.add(node.module.split(".")[0])
+
+    missing = sorted(
+        name
+        for name in imported
+        if name not in sys.stdlib_module_names
+        and name not in LOCAL_MODULES
+        and DISTRIBUTION_OF.get(name, name).lower() not in declared
+    )
+    assert not missing, (
+        f"the tests import {missing} and no requirements file asks for them, "
+        "so a clean checkout fails at collection"
+    )
+
+
 def test_pyproject_declares_the_entry_points():
     text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
     assert 'p7mmanager = "p7mmanager.main:main"' in text

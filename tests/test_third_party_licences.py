@@ -141,26 +141,37 @@ def test_the_declared_licences_are_the_ones_the_wheels_declare(document: str) ->
 
     Read back out of the installed distributions' own metadata, so a wheel that
     relicenses between versions is caught here rather than after a release.
-    Skipped per package that is not installed, which keeps this useful in an
-    environment that has only some of them.
+
+    The names come from the table itself rather than from a list kept beside
+    it: a hand-written list of packages to check is the same kind of stale
+    claim this test exists to catch, and one inherited from a sibling product
+    named three packages this one has never depended on, so it skipped every
+    time it ran. Rows that are not distribution names -- the obligations table,
+    the aggregate line for Qt's binaries -- simply do not resolve and are
+    passed over.
     """
     from importlib.metadata import PackageNotFoundError, distribution
 
     checked = 0
-    for name in ("playwright", "greenlet", "typing_extensions"):
+    for line in document.splitlines():
+        if not line.startswith("| **"):
+            continue
+        name = line.split("**")[1]
         try:
             metadata = distribution(name).metadata
-        except PackageNotFoundError:
+        except (PackageNotFoundError, ValueError):
             continue
         declared = metadata.get("License-Expression") or metadata.get("License")
         if not declared:
             continue
-        row = next(line for line in document.splitlines()
-                   if line.startswith(f"| **{name}**"))
-        assert declared in row, f"{name} declares {declared!r}; the table says {row}"
+        assert declared in line, (
+            f"{name} declares {declared!r}; the table says {line}"
+        )
         checked += 1
-    if not checked:
-        pytest.skip("none of the packages with a declared licence are installed")
+    assert checked, (
+        "no row in the table names an installed distribution, so nothing was "
+        "checked against real metadata"
+    )
 
 
 def test_the_document_says_which_claims_are_this_machines(document: str) -> None:
@@ -211,13 +222,6 @@ class TestBundleClassifier:
         assert classified is not None, f"{path} was not recognised as native"
         assert classified[1] == component
 
-    def test_a_file_merely_called_node_is_not_the_driver(self) -> None:
-        """``node`` is a generic enough name to belong to anything; the match
-        is on the path Playwright actually puts it at.
-        """
-        assert not is_native("resources/node")
-        assert not is_native("app/x/node")
-
     def test_the_frozen_executable_is_not_a_library(self) -> None:
         assert not is_native("P7MManager")
         assert not is_native("base_library.zip")
@@ -265,11 +269,13 @@ class TestLicenceCollection:
     def test_a_distribution_that_is_not_installed_gets_no_directory(
         self, tree: str
     ) -> None:
-        """PySide6 comes in three distributions and P7M Manager needs one of them.
+        """A licence directory is a claim that the thing it covers is here.
 
-        Writing the supplied LGPL-3.0 text for all three regardless put a
-        PySide6_Addons directory into an archive containing no such thing,
-        which reads as a claim about what is in the bundle.
+        SUPPLIED_TEXTS names four Qt distributions because requirements.txt
+        asks for the PySide6 metapackage, which drags in Essentials, Addons
+        and shiboken6 together. Writing the supplied LGPL-3.0 text for a name
+        regardless of whether it resolves would put a directory into the
+        archive for software the bundle does not contain.
         """
         from importlib.metadata import PackageNotFoundError, distribution
 
@@ -280,58 +286,6 @@ class TestLicenceCollection:
                 assert not os.path.isdir(os.path.join(tree, "python", name)), (
                     f"{name} is not installed but got a licence directory"
                 )
-
-    def test_the_playwright_driver_aggregate_is_collected(self, tree: str) -> None:
-        """The 154 KB file that is the notice for the whole Node binary.
-
-        It is package data, not distribution metadata, so a collector that
-        reads dist-info alone picks up Playwright's own 11 KB Apache-2.0 text,
-        reports success, and leaves out the largest and most necessary licence
-        in the archive — the one §11 of COMMERCIAL-LICENSE.md promises travels
-        with it.
-        """
-        pytest.importorskip("playwright")
-        driver = os.path.join(tree, "python", "playwright", "driver", "LICENSE")
-        assert os.path.exists(driver), "the Node aggregate was not collected"
-        assert os.path.getsize(driver) > 100_000, (
-            "the collected file is too small to be the aggregate; dist-info's "
-            "own LICENSE was probably picked up instead"
-        )
-
-    def test_the_driver_notices_beside_the_code_are_collected_too(
-        self, tree: str
-    ) -> None:
-        """Three of them are named after what they cover rather than after the
-        word — utilsBundle.js.LICENSE and friends — so matching only on the
-        start of a file name collected none of them.
-        """
-        pytest.importorskip("playwright")
-        directory = os.path.join(tree, "python", "playwright")
-        collected = {
-            os.path.basename(name)
-            for _root, _dirs, files in os.walk(directory)
-            for name in files
-        }
-        for notice in ("NOTICE", "ThirdPartyNotices.txt"):
-            assert notice in collected, f"Playwright ships {notice} and says so"
-
-        # The bug this guards against was matching only the start of a file
-        # name, which collected nothing whose name *ends* in ".LICENSE" --
-        # utilsBundle.js.LICENSE and its siblings. Which of those sidecars
-        # exists depends on the Playwright release, and requirements.txt admits
-        # a range, so assert against what this installation actually ships
-        # rather than against one version's file list.
-        import playwright
-
-        driver = os.path.join(os.path.dirname(playwright.__file__), "driver")
-        shipped = {
-            name
-            for _root, _dirs, files in os.walk(driver)
-            for name in files
-            if name.endswith(".LICENSE")
-        }
-        missing = sorted(shipped - collected)
-        assert not missing, f"licence sidecars left behind: {missing}"
 
     def test_the_pyinstaller_bootloader_exception_travels_with_the_binary(
         self, tree: str
@@ -387,12 +341,14 @@ class TestLicenceCollection:
 
 
 class TestWhatCountsAsALicenceFile:
-    """Three shapes, because Playwright uses all three.
+    """Three shapes, because wheels in the wild use all three.
 
     A file named like a licence, a file in a directory named like licences,
-    and a file named after the code it covers with the word appended. The
-    third was not matched at first, and it is where 149 KB of Playwright's
-    notices live.
+    and a file named after the code it covers with the word appended. Qt's
+    wheels use the first two -- and ship nothing at all for the terms that
+    matter, which is why SUPPLIED_TEXTS exists. The third shape is not one
+    anything here uses today; the collector is the family's and implements it,
+    and a branch nobody exercises is a branch that rots.
     """
 
     def test_named_like_one(self) -> None:
@@ -411,7 +367,7 @@ class TestWhatCountsAsALicenceFile:
         assert _is_licence(["serverRegistry.js.LICENSE"])
 
     def test_and_not_everything_else(self) -> None:
-        assert not _is_licence(["driver", "node"])
+        assert not _is_licence(["vendor", "node"])
         assert not _is_licence(["package", "lib", "utilsBundle.js"])
         assert not _is_licence(["README.md"])
 
@@ -420,10 +376,10 @@ class TestLicencePathHandling:
     """Two licence files with the same name must not become one.
 
     Wheels put licence texts both beside METADATA and under a ``licenses/``
-    directory, and Playwright ships eight at four different depths. Writing
-    them by base name leaves a tree that looks complete and has silently kept
-    only the last, which is the single failure this collector exists to
-    prevent.
+    directory, and a vendored dependency can ship several at different depths.
+    Writing them by base name leaves a tree that looks complete and has
+    silently kept only the last, which is the single failure this collector
+    exists to prevent.
     """
 
     def test_the_conventional_licenses_prefix_is_dropped(self) -> None:
@@ -436,12 +392,12 @@ class TestLicencePathHandling:
         assert flattened == {"LICENSE": "outer", "licenses/LICENSE": "inner"}
 
     def test_deeper_paths_are_preserved(self) -> None:
-        """Playwright's driver notices differ only by path."""
+        """Notices that differ only by path must stay three files."""
         vendored = [
-            ("driver/LICENSE", "the aggregate"),
-            ("driver/package/LICENSE", "the npm package"),
-            ("driver/package/lib/webp_codec.LICENSE", "webp"),
+            ("vendor/LICENSE", "the aggregate"),
+            ("vendor/package/LICENSE", "the package"),
+            ("vendor/package/lib/codec.LICENSE", "one bundled codec"),
         ]
         flattened = dict(_flatten(vendored))
         assert len(flattened) == 3
-        assert flattened["driver/LICENSE"] == "the aggregate"
+        assert flattened["vendor/LICENSE"] == "the aggregate"
