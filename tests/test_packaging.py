@@ -155,7 +155,29 @@ def test_the_launcher_travels_inside_the_archive():
 
 
 def test_the_archive_carries_the_licence_texts():
-    assert re.search(r"cp LICENSE COMMERCIAL-LICENSE\.md README\.md CHANGELOG\.md", WORKFLOW)
+    """In licenses/, and only there.
+
+    AGPL-3.0 section 5 wants this program's own licence to travel with the
+    object code, and the licence tree carries it as P7MManager-LICENSE.txt --
+    the repository's LICENSE under a name that says whose it is, among
+    everybody else's.
+
+    The root used to carry LICENSE, COMMERCIAL-LICENSE.md, README.md and
+    CHANGELOG.md as well. That duplicated the AGPL, put four documents in
+    front of somebody who opened the archive to find a program, and made this
+    the only one of the seven products whose download did not unpack to just
+    the program, its launcher and its checksum.
+    """
+    assert 'cp -R build/licenses "$root/licenses"' in WORKFLOW
+    assert "cp LICENSE" not in WORKFLOW, (
+        "the repository's documents are back in the archive root"
+    )
+
+    collector = (ROOT / "tools" / "collect_licences.py").read_text(encoding="utf-8")
+    assert '"P7MManager-LICENSE.txt"' in collector, (
+        "nothing puts this program's own licence in the tree, so dropping it "
+        "from the root drops it from the archive"
+    )
 
 
 def test_the_launcher_itself_is_tested_before_publishing():

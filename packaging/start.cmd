@@ -114,17 +114,18 @@ if not "%~1"=="" goto :foreground
 
 rem With none, which is what a double-click sends, this console has one job
 rem left: stay up while the program starts, and say what it is waiting for. A
-rem frozen application is not quick off the mark -- Windows scans every file
-rem before it will let any of them load -- and a console that vanishes
-rem instantly leaves nothing on screen for that wait.
+rem frozen application is not quick off the mark -- a onefile build unpacks
+rem its whole payload into a temporary folder on every launch, and Windows
+rem scans what was unpacked the first time it sees it -- and a console that
+rem vanishes instantly leaves nothing on screen for that wait.
 where powershell > nul 2>&1
 if errorlevel 1 goto :handoff
 
 echo Starting %APP%...
 echo.
-echo The first launch is the slow one: Windows checks every file before it
-echo will run any of them. This window closes by itself as soon as %APP% is
-echo on screen.
+echo %APP% is one file that unpacks itself before it runs, so every start
+echo takes a moment -- the first one longer, because Windows checks what it
+echo unpacked. This window closes by itself as soon as %APP% is on screen.
 
 set "_LAUNCH_TARGET=%EXE%"
 set "_LAUNCH_TIMEOUT=%P7MMANAGER_LAUNCH_TIMEOUT%"

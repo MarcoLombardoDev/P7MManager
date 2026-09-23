@@ -373,14 +373,21 @@ jobs:
               ;;
           esac
 
-          # A downloader who never opens the repository has no other copy of
-          # the terms, and AGPL-3.0 section 5 asks for them to travel with it.
-          cp LICENSE COMMERCIAL-LICENSE.md README.md CHANGELOG.md "$root/"
-
-          # And everybody else's terms, which is the larger obligation: Qt is
-          # LGPL-3.0 and its §4 asks for the text to accompany the object code.
-          # The per-platform inventory of which binary belongs to which project
-          # is in there too, generated on this runner a few steps above.
+          # Everybody else's terms, and this program's own: AGPL-3.0 section 5
+          # asks for the licence to travel with the object code, and Qt's
+          # LGPL-3.0 §4 asks the same in stronger words. Both are in here --
+          # the tree opens with P7MManager-LICENSE.txt, which is this
+          # repository's LICENSE under a name that says whose it is, and the
+          # per-platform inventory of which binary belongs to which project is
+          # beside it, generated on this runner a few steps above.
+          #
+          # LICENSE, COMMERCIAL-LICENSE.md, README.md and CHANGELOG.md used to
+          # be copied to the root as well. That put four files in front of
+          # somebody who opened the archive to find the program, duplicated the
+          # AGPL that licenses/ already carries, and made this the only one of
+          # the seven products whose download did not unpack to just the
+          # program, its launcher and its checksum. The terms did not go
+          # anywhere; they are one folder in.
           cp -R build/licenses "$root/licenses"
 
           # Written in the format `sha256sum -c` reads, with the name relative

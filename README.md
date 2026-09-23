@@ -184,11 +184,8 @@ P7M Manager/
 ├── start.cmd              ← Windows: this is what you run
 ├── P7MManager.exe         (P7MManager on Linux, P7MManager.app on macOS)
 ├── P7MManager.exe.sha256  the executable's checksum, which start.cmd verifies
-├── licenses/              everybody else's terms, and what each binary is
-├── LICENSE
-├── COMMERCIAL-LICENSE.md
-├── README.md
-└── CHANGELOG.md
+└── licenses/              the terms — this program's included — and what
+                           each binary in the bundle is
 ```
 
 On Linux and macOS the launcher is `start.sh` and `start.command` respectively; both do the

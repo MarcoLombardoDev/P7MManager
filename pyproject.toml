@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "p7m-manager"
-version = "1.2.0"
+version = "1.2.1"
 description = "P7M Manager — inspect signed .p7m containers and extract the documents they carry"
 readme = "README.md"
 requires-python = ">=3.10"

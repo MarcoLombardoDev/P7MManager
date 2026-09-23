@@ -130,8 +130,8 @@ if sys.platform == "darwin":
         info_plist={
             "CFBundleName": "P7M Manager",
             "CFBundleDisplayName": "P7M Manager",
-            "CFBundleShortVersionString": "1.2.0",
-            "CFBundleVersion": "1.2.0",
+            "CFBundleShortVersionString": "1.2.1",
+            "CFBundleVersion": "1.2.1",
             "NSHighResolutionCapable": True,
             "LSMinimumSystemVersion": "11.0",
         },

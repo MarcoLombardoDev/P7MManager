@@ -4,6 +4,28 @@ All notable changes to P7M Manager are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] — 2026-09-23
+
+### Changed
+
+- **The archive holds the program, its launcher, its checksum and
+  `licenses/`, and nothing else.** It also carried LICENSE,
+  COMMERCIAL-LICENSE.md, README.md and CHANGELOG.md in the root — four
+  documents in front of somebody who opened it to find a program, one of them
+  a second copy of the AGPL that `licenses/P7MManager-LICENSE.txt` already
+  carries, and none of them in the other six products' archives. The terms did
+  not go anywhere; they are one folder in, where everybody else's are.
+
+### Fixed
+
+- **The console says what the wait actually is.** It said the first launch was
+  the slow one because Windows checks every file before running any of them,
+  which was true of a folder build. This is one file that unpacks itself into
+  a temporary folder before it runs, so the wait is there on *every* start —
+  the first one longer still, for the reason the old message gave. Somebody
+  watching a console that promises the delay is a one-off, twice, has been
+  told something false about their own computer.
+
 ## [1.2.0] — 2026-09-23
 
 ### Changed

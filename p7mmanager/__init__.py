@@ -19,7 +19,7 @@ APP_NAME = "P7M Manager"
 APP_SUBTITLE = "Signed containers, opened"
 APP_ID = "p7mmanager"
 ORGANISATION = "MarcoLombardoDev"
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 
 APP_AUTHOR = "Marco Lombardo"
 APP_COPYRIGHT_YEAR = "2026"
