@@ -76,7 +76,6 @@ import shutil
 import subprocess
 import sys
 from dataclasses import dataclass, field
-from pathlib import Path
 
 APP_NAME = "P7M Manager"
 
@@ -469,48 +468,63 @@ def resolve_system(basename: str) -> tuple[str, str | None, str | None]:
     return package, None, "no Files: * stanza — needs review"
 
 
-def _paths_in_toc(path: str) -> list[str]:
-    """Every destination name packed into a onefile executable.
+def _paths_from_build_directory(root: str) -> list[tuple[str, str]] | None:
+    """``(bundle path, source path)`` from PyInstaller's own record of a build.
 
-    A onefile build leaves no directory to walk. The collected libraries go
-    into the executable and are unpacked to a temporary directory only while it
-    runs, so the thing that ships cannot be inventoried by looking at the disk.
-
-    PyInstaller writes its own record of what went in: ``PKG-00.toc`` in the
-    work directory, a Python literal whose entries are
-    ``(destination, source, typecode)``. That is a better witness than a
-    directory listing anyway — it is what the build actually packed, rather
-    than what happens to be lying next to the output.
-
-    Every destination is returned, whatever its typecode, because the caller
-    filters with the same ``classify`` rules it applies to a directory walk;
-    deciding here what counts would put the same judgement in two places.
+    This is the most accurate of the three inputs, because it carries where
+    each file came *from* — so a system library is resolved by its real path
+    rather than by matching its name against the ones dpkg happens to know.
     """
-    literal = ast.literal_eval(Path(path).read_text(encoding="utf-8"))
-    for element in literal:
-        if (
-            isinstance(element, list)
-            and element
-            and all(isinstance(row, tuple) and len(row) == 3 for row in element)
-        ):
-            return [str(destination) for destination, _source, _kind in element]
-    raise SystemExit(f"{path} holds no table of contents this understands")
+    toc = os.path.join(root, "Analysis-00.toc")
+    if not os.path.exists(toc):
+        return None
+    with open(toc, encoding="utf-8") as handle:
+        parsed = ast.literal_eval(handle.read())
+    found = []
+    for section in parsed:
+        if not isinstance(section, list):
+            continue
+        for entry in section:
+            if (isinstance(entry, tuple) and len(entry) == 3
+                    and entry[2] in ("BINARY", "EXTENSION")):
+                found.append((str(entry[0]), str(entry[1])))
+    return found
 
 
-def _relative_paths(root: str) -> list[str]:
-    """What to attribute: a bundle directory's files, or a TOC's entries."""
-    if os.path.isfile(root):
-        return _paths_in_toc(root)
-    return [
-        os.path.relpath(os.path.join(directory, name), root)
-        for directory, _subdirs, files in os.walk(root)
-        for name in sorted(files)
-    ]
+def _paths_from_executable(path: str) -> list[tuple[str, str]]:
+    """``(bundle path, '')`` for the binaries inside a single-file executable.
+
+    A ``--onefile`` build is an archive with a bootloader in front of it, so
+    there is nothing to walk: the contents have to be read out of it. Needs
+    PyInstaller importable, which any machine that produced the file has.
+    """
+    from PyInstaller.archive.readers import CArchiveReader
+
+    reader = CArchiveReader(path)
+    return [(name, "") for name, record in reader.toc.items() if record[-1] == "b"]
+
+
+def _paths_from_tree(root: str) -> list[tuple[str, str]]:
+    """``(bundle path, source path)`` for an extracted bundle directory."""
+    found = []
+    for directory, _subdirs, files in os.walk(root):
+        for name in sorted(files):
+            full = os.path.join(directory, name)
+            found.append((os.path.relpath(full, root), full))
+    return found
+
+
+def bundle_contents(path: str) -> list[tuple[str, str]]:
+    """Whatever ``--bundle`` was pointed at, as a list of bundle paths."""
+    if os.path.isfile(path):
+        return _paths_from_executable(path)
+    from_build = _paths_from_build_directory(path)
+    return from_build if from_build is not None else _paths_from_tree(path)
 
 
 def take_inventory(platform: str, root: str) -> Inventory:
     inventory = Inventory(platform=platform, root=root)
-    for rel in _relative_paths(root):
+    for rel, _source in bundle_contents(root):
         # PyInstaller lays the bundle out differently per platform:
         # _internal/ on Windows and Linux, Contents/Frameworks and
         # Contents/Resources inside an .app on macOS. Attribution rules
@@ -644,9 +658,8 @@ def main(argv: list[str] | None = None) -> int:
         required=True,
         metavar="PLATFORM=PATH",
         help=(
-            "an extracted release bundle, e.g. linux=/tmp/P7M Manager, or a "
-            "onefile build's PKG-00.toc, which is the only record of what went "
-            "inside the executable"
+            "what to inventory: an extracted release bundle, a onefile "
+            "executable, or PyInstaller's build directory"
         ),
     )
     parser.add_argument("--json", help="write the full inventory here")
@@ -663,7 +676,7 @@ def main(argv: list[str] | None = None) -> int:
             parser.error(f"--bundle wants PLATFORM=PATH, got {spec!r}")
         platform, path = spec.split("=", 1)
         if not os.path.exists(path):
-            parser.error(f"no such bundle or table of contents: {path}")
+            parser.error(f"no such bundle: {path}")
         inventory = take_inventory(platform, path)
         summarise(inventory)
         print()

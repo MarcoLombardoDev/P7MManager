@@ -197,19 +197,21 @@ jobs:
         run: |
           report="build/licenses/THIRD-PARTY-LICENSES-${{ matrix.asset }}.md"
 
-          # PKG-00.toc, and not a directory. A onefile build leaves nothing on
-          # disk to walk -- the libraries are inside the executable and are
-          # unpacked to a temporary directory only while it runs -- so
-          # PyInstaller's own record of what it packed is the only witness
-          # there is. It is also the better one: it says what went in, rather
-          # than what happens to be lying beside the output.
+          # PyInstaller's work directory, which is where it leaves
+          # Analysis-00.toc: its own record of what it collected, with the
+          # source path of every file. A onefile build leaves nothing else to
+          # look at -- the libraries are inside the executable and are unpacked
+          # to a temporary directory only while it runs -- and the record is
+          # the better witness anyway, because it says where each library came
+          # from rather than only what it is called.
           #
-          # This used to read build/$APP_NAME, which is PyInstaller's work
-          # directory and has never held the collected libraries in either
-          # build shape. See the report check below for how that survived.
+          # The path is lowercase because PyInstaller names the work directory
+          # after the spec file. It used to be spelled build/$APP_NAME, which
+          # exists on a case-insensitive filesystem and not on Linux; see the
+          # report check below for how that survived three releases.
           set +e
           python tools/licence_inventory.py \
-            --bundle "${{ matrix.asset }}=build/p7mmanager/PKG-00.toc" \
+            --bundle "${{ matrix.asset }}=build/p7mmanager" \
             --licences build/licenses \
             --markdown "$report"
           status=$?

@@ -307,19 +307,19 @@ def test_the_inventory_reads_what_the_build_packed():
     """A onefile build leaves no directory to inventory.
 
     The libraries go inside the executable and are unpacked to a temporary
-    directory only while it runs, so the only record of what shipped is
-    PyInstaller's own: PKG-00.toc in the work directory.
+    directory only while it runs, so what is read is PyInstaller's own record
+    of the build: ``Analysis-00.toc`` in the work directory, which also carries
+    where each file came from.
 
-    This step used to be pointed at ``build/$APP_NAME``, which is that work
-    directory itself and has never held the collected libraries in either
-    build shape. On Linux the path did not even exist, because PyInstaller
-    names the work directory after the spec file and that is lowercase here,
-    so the script died in argparse.
+    The path is lowercase because PyInstaller names that directory after the
+    spec file. It used to be spelled ``build/$APP_NAME``, which resolves on a
+    case-insensitive filesystem and does not exist on Linux, so the script died
+    in argparse there.
     """
     run = step_named(build_steps(load_workflow()), "Inventory what the bundle ships")["run"]
-    assert "PKG-00.toc" in run, "the inventory is not reading what the build packed"
+    assert "=build/p7mmanager" in run, "the inventory is not reading the build's own record"
     assert "=build/$APP_NAME" not in run, (
-        "back to the work directory, which holds no collected libraries"
+        "back to a path that does not exist on a case-sensitive filesystem"
     )
 
 

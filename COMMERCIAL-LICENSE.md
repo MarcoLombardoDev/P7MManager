@@ -362,10 +362,13 @@ something this licence, or a wheel, can grant.
 **A build is more than this table, and you do not have to take the difference on trust.**
 A frozen bundle contains the transitive closure of everything those packages link — Qt's
 own libraries and plugins, the CPython interpreter, and whatever the build machine's
-linker resolved. A Linux build of 1.1.0 contains **201 native binaries**: 90 from wheels
-(87 of them Qt), 87 from the build machine, 24 CPython extension modules. 1.0.0 had 217,
-and the difference is Qt: it depended on the `PySide6` metapackage, which brings
-PySide6-Addons with it, and this program imports nothing from Addons.
+linker resolved. A Linux build of 1.2.0 contains **184 native binaries**: 73 from wheels,
+all of them Qt; 87 from the build machine; 24 CPython extension modules. 1.0.0 counted 217
+and 1.1.0 counted 201; the first difference is real — the dependency was the `PySide6`
+metapackage, which brings PySide6-Addons with it, and this program imports nothing from
+Addons — and the second is not, it is seventeen of Qt's libraries that ship as a symlink
+beside the file it points at, counted twice by a method that walked the folder and once by
+the one that reads what the build packed.
 
 **Every one of them is inventoried in the archive you receive.** Each release carries
 `licenses/`, holding the licence text of everything in the bundle and a per-platform

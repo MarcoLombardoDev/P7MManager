@@ -4,7 +4,7 @@ P7M Manager is licensed **AGPL-3.0-or-later** (see [LICENSE](LICENSE)), with a
 commercial licence available separately (see
 [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md)). That covers the code in this
 repository. It does not cover the code P7M Manager is built on, and a
-downloadable release is mostly that other code: a Linux build contains 201
+downloadable release is mostly that other code: a Linux build contains 184
 native binaries and not one of them was written for P7M Manager. P7M Manager's
 own code travels through them as Python bytecode.
 
@@ -93,7 +93,7 @@ stack could not be offered under a commercial licence at all.
 
 | Component | Licence | What it actually requires |
 |---|---|---|
-| **Qt 6**, via PySide6-Essentials — 87 binaries | `LGPL-3.0` | The text with the object code, GPL-3.0 alongside it, and the recipient able to relink. See above. |
+| **Qt 6**, via PySide6-Essentials — 73 binaries | `LGPL-3.0` | The text with the object code, GPL-3.0 alongside it, and the recipient able to relink. See above. |
 | ICU, vendored inside the PySide6 wheel | `Unicode-3.0` | Reproduce the notice. Permissive. |
 | the 21 LGPL system libraries a Linux build collects | `LGPL-2.0/2.1` | A copy of the licence with the object code, and the ability to relink. |
 | CPython, frozen into the bundle | `PSF-2.0` | Retain the notice. Nothing further. |
@@ -168,7 +168,7 @@ the same pair.
   because the PySide6 wheels declare LGPL-3.0 in their metadata and then ship
   no licence file at all;
 - `system/` — the build machine's own `debian/copyright` record for each of the
-  83 system packages a Linux build draws a library from, 21 of them LGPL-2.0 or
+  80 system packages a Linux build draws a library from, 21 of them LGPL-2.0 or
   LGPL-2.1;
 - `cpython/Python-LICENSE.txt` — the interpreter and standard library, which
   are not a wheel and so have no metadata to read;
@@ -194,10 +194,18 @@ The per-binary table lives in the archive, not here:
 evidence it rests on so it can be re-checked, and rows the script could not
 attribute are printed as **unresolved** rather than guessed at.
 
-For the shape of it: a Linux build contains 201 native binaries — 90 from
-wheels (87 of them Qt, 3 the ICU tables vendored in the wheel), 87 from the
-build machine, 24 CPython extension modules. It was 217 before Addons was
-dropped from the dependency.
+For the shape of it: a Linux build contains 184 native binaries — 73 from
+wheels, all of them Qt; 87 from the build machine; 24 CPython extension
+modules.
+
+Two earlier numbers in this repository counted higher, and both were the
+counting rather than the build. 217 was before PySide6-Addons was dropped from
+the dependency. 201 was the same build as the 184 above, read by walking the
+unpacked folder, which counts a symlink as a file: seventeen of Qt's libraries
+ship as `libQt6Foo.so.6` pointing at `libQt6Foo.so.6.11.2`, and both were
+counted. The inventory now reads PyInstaller's own record of the build, which
+names each library once. The read of the finished executable agrees with it to
+the binary.
 
 ## Build-time tools
 

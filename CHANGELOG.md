@@ -38,10 +38,17 @@ All notable changes to P7M Manager are recorded here. The format follows
   the same code the inventory uses for "written, some rows need a human", so
   the step turned it into a warning and the archive shipped without the report
   §11 promises. It now reads `PKG-00.toc`, PyInstaller's own record of what
-  went into the executable, which is the only witness a onefile build leaves
-  and is a better one than a directory listing: it says what was packed rather
-  than what happens to be lying beside the output. Cross-checked against the
-  old directory walk on the same build — 201 binaries either way.
+  went into the executable. That reader is not new: Iris, Proteus, Argus and
+  Tyche have had it for a while and this repository, Orion and XIP were the
+  three left on the older copy. It is the better witness besides — it carries
+  the *source* path of every file, so a system library is resolved by where it
+  came from rather than by matching a name dpkg may not recognise.
+
+  The count drops from 201 to **184**, and the drop is the counting. Seventeen
+  of Qt's libraries ship as `libQt6Foo.so.6` pointing at the real file beside
+  it; walking a folder counts both, reading the build's record counts the
+  library once. Reading the finished executable instead agrees with it exactly,
+  which is the check worth having.
 - **A step that writes no report now fails** instead of warning. An exit code
   cannot distinguish a mistyped path from rows needing review; the presence of
   the file can.
