@@ -89,44 +89,49 @@ collect_licences(
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
+# One file. Everything -- Qt, the interpreter, the resources -- goes inside the
+# executable, which unpacks itself into a temporary directory on each launch.
+# It is the shape every product in this family uses; CLAUDE.md says why, and
+# what it costs.
+#
+# Two consequences live elsewhere in the repository and are easy to undo by
+# accident. Nothing passed as ``datas`` is visible to anyone after the build:
+# it lands in that temporary directory, which is why the launcher, the licence
+# tree and the checksum are put beside the executable by the release workflow
+# and not from here. And Qt is no longer a file in the archive that a recipient
+# can overwrite, so LGPL-3.0 §4's relinking obligation is met another way --
+# THIRD-PARTY-LICENSES.md sets out which, and it is not a formality.
 exe = EXE(
     pyz,
     a.scripts,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
     [],
-    exclude_binaries=True,
     name="P7MManager",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=False,
+    runtime_tmpdir=None,
     console=False,
     icon=icon,
 )
 
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    strip=False,
-    upx=False,
-    name="P7MManager",
-)
-
-# macOS expects an application bundle, not a folder of files: double-clicking a
-# COLLECT directory does nothing there. Built from the same collection, so the
-# three platforms ship identical contents in the shape each one expects.
+# macOS expects an application bundle: double-clicking a bare Unix executable
+# opens a terminal there, when it does anything at all. The bundle wraps the
+# same single binary the other two platforms ship.
 if sys.platform == "darwin":
     app = BUNDLE(
-        coll,
+        exe,
         name="P7MManager.app",
         icon=icon,
         bundle_identifier="dev.marcolombardo.p7mmanager",
         info_plist={
             "CFBundleName": "P7M Manager",
             "CFBundleDisplayName": "P7M Manager",
-            "CFBundleShortVersionString": "1.0.0",
-            "CFBundleVersion": "1.0.0",
+            "CFBundleShortVersionString": "1.2.0",
+            "CFBundleVersion": "1.2.0",
             "NSHighResolutionCapable": True,
             "LSMinimumSystemVersion": "11.0",
         },

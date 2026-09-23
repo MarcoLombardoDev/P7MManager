@@ -208,3 +208,53 @@ def test_the_launchers_point_at_the_release_notes_for_the_real_check():
         text = (ROOT / "packaging" / name).read_text(encoding="utf-8")
         assert "release notes" in text or "release page" in text
         assert "published as a separate" not in text
+
+
+class TestTheBuildIsOneFile:
+    """Every product in this family freezes to a single executable.
+
+    CLAUDE.md carries the rule and what it costs. These hold the two halves
+    that a later edit would undo without noticing: the spec that produces one
+    file, and the inventory step that can still see inside it.
+    """
+
+    def test_the_spec_produces_one_file_and_not_a_folder(self):
+        assert "COLLECT(" not in SPEC, (
+            "COLLECT is a folder build; this family ships one executable"
+        )
+        assert "exclude_binaries" not in SPEC, (
+            "exclude_binaries=True keeps the libraries out of the executable, "
+            "which is the folder build by another name"
+        )
+
+    def test_the_executable_carries_the_libraries_and_the_data(self):
+        """Passed to EXE, not to a COLLECT that no longer exists. Leaving one
+        of them out produces a build that links and then cannot start.
+        """
+        exe = SPEC[SPEC.index("exe = EXE("):SPEC.index(")", SPEC.index("icon=icon"))]
+        for argument in ("a.binaries", "a.zipfiles", "a.datas"):
+            assert argument in exe, f"{argument} never reaches the executable"
+
+    def test_macos_still_gets_an_application_bundle(self):
+        """Double-clicking a bare Unix executable on macOS opens a terminal,
+        when it does anything at all. BUNDLE wraps the same single binary.
+        """
+        assert "BUNDLE(" in SPEC
+        assert "app = BUNDLE(\n        exe," in SPEC, (
+            "the bundle is built from something other than the onefile EXE"
+        )
+
+
+def test_the_mac_bundle_reports_the_version_the_program_reports():
+    """Info.plist is what Finder, the installer and crash reports read.
+
+    It was written once at 1.0.0 and then not touched for two releases, so a
+    macOS user's Get Info panel and the program's own About box disagreed --
+    and nothing noticed, because nothing on Linux or Windows reads it.
+    """
+    from p7mmanager import __version__
+
+    for key in ("CFBundleShortVersionString", "CFBundleVersion"):
+        assert f'"{key}": "{__version__}"' in SPEC, (
+            f"{key} in the bundle does not say {__version__}"
+        )

@@ -68,6 +68,7 @@ every such library is reported unresolved.
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import os
 import re
@@ -75,6 +76,7 @@ import shutil
 import subprocess
 import sys
 from dataclasses import dataclass, field
+from pathlib import Path
 
 APP_NAME = "P7M Manager"
 
@@ -467,35 +469,72 @@ def resolve_system(basename: str) -> tuple[str, str | None, str | None]:
     return package, None, "no Files: * stanza — needs review"
 
 
+def _paths_in_toc(path: str) -> list[str]:
+    """Every destination name packed into a onefile executable.
+
+    A onefile build leaves no directory to walk. The collected libraries go
+    into the executable and are unpacked to a temporary directory only while it
+    runs, so the thing that ships cannot be inventoried by looking at the disk.
+
+    PyInstaller writes its own record of what went in: ``PKG-00.toc`` in the
+    work directory, a Python literal whose entries are
+    ``(destination, source, typecode)``. That is a better witness than a
+    directory listing anyway — it is what the build actually packed, rather
+    than what happens to be lying next to the output.
+
+    Every destination is returned, whatever its typecode, because the caller
+    filters with the same ``classify`` rules it applies to a directory walk;
+    deciding here what counts would put the same judgement in two places.
+    """
+    literal = ast.literal_eval(Path(path).read_text(encoding="utf-8"))
+    for element in literal:
+        if (
+            isinstance(element, list)
+            and element
+            and all(isinstance(row, tuple) and len(row) == 3 for row in element)
+        ):
+            return [str(destination) for destination, _source, _kind in element]
+    raise SystemExit(f"{path} holds no table of contents this understands")
+
+
+def _relative_paths(root: str) -> list[str]:
+    """What to attribute: a bundle directory's files, or a TOC's entries."""
+    if os.path.isfile(root):
+        return _paths_in_toc(root)
+    return [
+        os.path.relpath(os.path.join(directory, name), root)
+        for directory, _subdirs, files in os.walk(root)
+        for name in sorted(files)
+    ]
+
+
 def take_inventory(platform: str, root: str) -> Inventory:
     inventory = Inventory(platform=platform, root=root)
-    for directory, _subdirs, files in os.walk(root):
-        for name in sorted(files):
-            rel = os.path.relpath(os.path.join(directory, name), root)
-            # PyInstaller lays the bundle out differently per platform:
-            # _internal/ on Windows and Linux, Contents/Frameworks and
-            # Contents/Resources inside an .app on macOS. Attribution rules
-            # are written against the path *below* that prefix, so strip it.
-            inner = rel.split("_internal/", 1)[-1]
-            for prefix in ("Contents/Frameworks/", "Contents/Resources/", "Contents/MacOS/"):
-                inner = inner.split(prefix, 1)[-1]
-            classified = classify(inner)
-            if classified is None:
-                continue
-            origin, component = classified
-            if origin == "system":
-                package, licence, evidence = resolve_system(os.path.basename(rel))
-                inventory.entries.append(
-                    Entry(rel, origin, package, licence, evidence, FLAGGED.get(package))
-                )
+    for rel in _relative_paths(root):
+        # PyInstaller lays the bundle out differently per platform:
+        # _internal/ on Windows and Linux, Contents/Frameworks and
+        # Contents/Resources inside an .app on macOS. Attribution rules
+        # are written against the path *below* that prefix, so strip it.
+        inner = rel.split("_internal/", 1)[-1]
+        for prefix in ("Contents/Frameworks/", "Contents/Resources/", "Contents/MacOS/"):
+            inner = inner.split(prefix, 1)[-1]
+        classified = classify(inner)
+        if classified is None:
+            continue
+        origin, component = classified
+        if origin == "system":
+            package, licence, evidence = resolve_system(os.path.basename(rel))
+            inventory.entries.append(
+                Entry(rel, origin, package, licence, evidence, FLAGGED.get(package))
+            )
+        else:
+            if origin == "cpython":
+                licence = "PSF-2.0"
             else:
-                if origin == "cpython":
-                    licence = "PSF-2.0"
-                else:
-                    licence = WHEEL_LICENCES.get(component) or _declared_licence(component)
-                inventory.entries.append(
-                    Entry(rel, origin, component, licence, ORIGIN_SOURCES[origin])
-                )
+                licence = WHEEL_LICENCES.get(component) or _declared_licence(component)
+            inventory.entries.append(
+                Entry(rel, origin, component, licence, ORIGIN_SOURCES[origin])
+            )
     inventory.entries.sort(key=lambda e: (e.origin, e.component, e.path))
     return inventory
 
@@ -604,7 +643,11 @@ def main(argv: list[str] | None = None) -> int:
         action="append",
         required=True,
         metavar="PLATFORM=PATH",
-        help="an extracted release bundle, e.g. linux=/tmp/P7M Manager",
+        help=(
+            "an extracted release bundle, e.g. linux=/tmp/P7M Manager, or a "
+            "onefile build's PKG-00.toc, which is the only record of what went "
+            "inside the executable"
+        ),
     )
     parser.add_argument("--json", help="write the full inventory here")
     parser.add_argument("--markdown", help="write the per-platform table here")
@@ -619,8 +662,8 @@ def main(argv: list[str] | None = None) -> int:
         if "=" not in spec:
             parser.error(f"--bundle wants PLATFORM=PATH, got {spec!r}")
         platform, path = spec.split("=", 1)
-        if not os.path.isdir(path):
-            parser.error(f"not a directory: {path}")
+        if not os.path.exists(path):
+            parser.error(f"no such bundle or table of contents: {path}")
         inventory = take_inventory(platform, path)
         summarise(inventory)
         print()

@@ -303,6 +303,43 @@ def test_the_bundle_is_inventoried_on_the_machine_that_built_it():
     assert "--markdown" in run and "THIRD-PARTY-LICENSES-" in run
 
 
+def test_the_inventory_reads_what_the_build_packed():
+    """A onefile build leaves no directory to inventory.
+
+    The libraries go inside the executable and are unpacked to a temporary
+    directory only while it runs, so the only record of what shipped is
+    PyInstaller's own: PKG-00.toc in the work directory.
+
+    This step used to be pointed at ``build/$APP_NAME``, which is that work
+    directory itself and has never held the collected libraries in either
+    build shape. On Linux the path did not even exist, because PyInstaller
+    names the work directory after the spec file and that is lowercase here,
+    so the script died in argparse.
+    """
+    run = step_named(build_steps(load_workflow()), "Inventory what the bundle ships")["run"]
+    assert "PKG-00.toc" in run, "the inventory is not reading what the build packed"
+    assert "=build/$APP_NAME" not in run, (
+        "back to the work directory, which holds no collected libraries"
+    )
+
+
+def test_an_inventory_that_writes_no_report_fails_the_build():
+    """The hole that let the above ship for three releases.
+
+    ``argparse`` exits 2 on a bad argument. An inventory that wrote its report
+    and wants a human to read some rows also exits 2. The case statement below
+    maps 2 to ``::warning::``, so a mistyped path arrived as a warning nobody
+    reads and the archive went out without the inventory §11 promises.
+
+    An exit code cannot tell those apart. The report file can.
+    """
+    run = step_named(build_steps(load_workflow()), "Inventory what the bundle ships")["run"]
+    assert '[ ! -s "$report" ]' in run, (
+        "nothing checks that a report was actually written"
+    )
+    assert "exit 1" in run
+
+
 def test_the_inventory_is_written_where_the_archive_will_carry_it():
     """Into the licence tree, not to some path of its own.
 
@@ -537,10 +574,10 @@ class TestLauncher:
             assert (REPO / "packaging" / name).is_file(), f"packaging/{name} is missing"
 
     def test_the_launcher_is_installed_beside_the_executable(self):
-        """Not through the spec file: PyInstaller 6 puts everything a spec
-        declares as ``datas`` under ``_internal/``, which is the one place a
-        launcher must not be. Only the workflow can write next to the
-        executable.
+        """Not through the spec file: everything a spec declares as ``datas``
+        is packed inside the executable and unpacked to a temporary directory
+        while it runs, which is the one place a launcher is no use at all.
+        Only the workflow can write next to the executable.
         """
         step = step_named(build_steps(load_workflow()), LAUNCHER_STEP)
         assert step is not None, "nothing puts a start script in the bundle"

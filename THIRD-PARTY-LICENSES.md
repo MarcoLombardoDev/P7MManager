@@ -102,11 +102,50 @@ stack could not be offered under a commercial licence at all.
 Everything else is MIT, BSD or Zlib and asks only that the notice travels with
 the binary — which is what `licenses/` inside the archive is for.
 
-**Relinking, concretely.** These are folder builds: every collected library is
-an ordinary file inside the unpacked archive, so replacing one with a modified
-build of the same library is overwriting a file. Nothing is statically linked
-into the executable except PyInstaller's own bootloader, which carries the
-exception that permits exactly that.
+**Relinking, concretely.** This is the obligation that takes actual work, and
+it is worth being exact about which of §4(d)'s two routes is taken.
+
+§4(d)(0) is the easy one: use a shared-library mechanism that loads a copy of
+the library *already on the user's machine* and works with a modified one. No
+frozen build has ever qualified. A PyInstaller bundle carries its own Qt, on
+purpose — the program starts on a machine with no Qt installed, which is most
+of the reason anyone downloads it — so §4(d)(0) has never been available here,
+in this shape or the folder shape that preceded it.
+
+So §4(d)(1) is the route: supply the **Minimal Corresponding Source** for the
+library and the **Corresponding Application Code**, in a form that lets the
+recipient recombine them. Concretely, and this is a complete list:
+
+1. **The application's own source is published in full** at
+   [the repository](https://github.com/MarcoLombardoDev/P7MManager), under
+   AGPL-3.0-or-later. That is the Corresponding Application Code, and it is
+   there for everyone, not on request.
+2. **The exact Qt build is named.** `licenses/THIRD-PARTY-LICENSES-<platform>.md`
+   inside the archive records the PySide6 version each binary came from, and
+   `requirements.txt` pins the range. The Minimal Corresponding Source is what
+   The Qt Company publishes for that version; nothing here modifies Qt.
+3. **The rebuild is one command.** `pip install -r requirements.txt` with a
+   modified PySide6 in place of the published one, then
+   `pyinstaller p7mmanager.spec`, produces an executable linked against it.
+   `p7mmanager.spec` is in the repository and is the file the release
+   workflow runs — not a description of what it runs.
+
+Nothing is statically linked into the executable except PyInstaller's own
+bootloader, which carries the exception that permits exactly that. Qt is still
+dynamically loaded at run time; the bundle unpacks its `.so`, `.dylib` or
+`.dll` files into a temporary directory and links against those.
+
+**What changed, and what it costs a redistributor.** Until 1.2.0 these were
+folder builds, and the answer to this obligation was that every Qt library was
+an ordinary file in the unpacked archive, so replacing one was overwriting a
+file. That was a stronger practical position than the one above, and it was
+given up deliberately when this family settled on one executable per product
+(see CLAUDE.md). It costs nothing to anyone redistributing under AGPL-3.0,
+because their application code is published by definition. **It does cost
+something to a commercial licensee shipping a closed derivative**: route (1)
+asks for *their* Corresponding Application Code, not this project's, and
+§11 of [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md) says what that leaves
+them to do.
 
 ## What was deliberately removed
 

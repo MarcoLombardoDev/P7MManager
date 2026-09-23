@@ -379,10 +379,24 @@ What a redistributor inherits, beyond the table above:
 
 - **Qt, and the LGPL-3.0 row above is the whole of it.** §4 wants the licence text with
   the object code — it is in `licenses/python/PySide6_Essentials/`, together with
-  GPL-3.0, because
-  LGPL-3.0 is a set of additional permissions on top of it and means nothing alone — and
-  the recipient must be able to relink. These are folder builds: every Qt library is an
-  ordinary file in the unpacked archive, so replacing one is overwriting a file.
+  GPL-3.0, because LGPL-3.0 is a set of additional permissions on top of it and means
+  nothing alone — and the recipient must be able to relink against a modified Qt.
+
+  **Read this part before you build on it.** From 1.2.0 the program is a single
+  executable, with Qt packed inside it and unpacked to a temporary directory at run
+  time. It is no longer a file in the archive that anybody can overwrite, so §4(d)'s
+  easy route is closed and the obligation is met by §4(d)(1) instead: the application's
+  Corresponding Application Code, plus the pinned Qt version, published so a recipient
+  can rebuild. THIRD-PARTY-LICENSES.md sets out exactly how this project does that.
+
+  **That route does not transfer to you.** §4(d)(1) asks for *your* application's
+  Corresponding Application Code, and this licence exists precisely so you need not
+  publish it. If you redistribute a closed derivative as a single executable with Qt
+  inside it, satisfying §4(d) is yours to arrange — the usual answers being to supply
+  your recipients with your application in object-code form so they can relink, or to
+  ship Qt as separate library files beside your program instead of inside it. Neither
+  is difficult; both have to be *decided*, and a licence that let you assume otherwise
+  would be doing you no favours.
 - **The LGPL-2.0 and LGPL-2.1 system libraries** a Linux build collects — 21 of them in
   1.1.0, the ATK, cairo, GLib and pango families among them. Same two obligations, same
   answer, and the build machine's own `debian/copyright` record for each is in

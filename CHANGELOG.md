@@ -4,6 +4,51 @@ All notable changes to P7M Manager are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] — 2026-09-23
+
+### Changed
+
+- **One executable instead of a folder.** Every product in this family now
+  freezes to a single file; CLAUDE.md carries the rule and what it costs. An
+  archive is the program, its launcher, its checksum and the licence texts —
+  no `_internal/` to be told to leave alone. Nothing a spec file declares as
+  data is visible after the build any more, because it is unpacked to a
+  temporary directory while the program runs, so the workflow writes the
+  things a reader has to be able to see beside the executable instead.
+
+  It is slower to start: the executable unpacks about 60 MB on each launch,
+  measured at four seconds cold and just over one warm on an ordinary Linux
+  machine.
+
+  **This changes how one licence obligation is met, and the documents say so.**
+  A folder build answered LGPL-3.0 §4(d) by making every Qt library a file in
+  the archive that a recipient could overwrite. There is no such file now, so
+  §4(d)(1) is the route instead: published application source, the pinned Qt
+  version, and a one-command rebuild. THIRD-PARTY-LICENSES.md sets it out, and
+  §11 of COMMERCIAL-LICENSE.md says plainly that the route does not transfer
+  to a closed derivative — that is a redistributor's own arrangement to make.
+
+### Fixed
+
+- **The per-platform inventory had never actually inventoried anything.** The
+  release step read `build/P7MManager`, which is PyInstaller's work directory
+  and holds no collected libraries in either build shape. On Linux that path
+  does not even exist, because the work directory is named after the spec file
+  and this one is lowercase, so the script died in `argparse` — which exits 2,
+  the same code the inventory uses for "written, some rows need a human", so
+  the step turned it into a warning and the archive shipped without the report
+  §11 promises. It now reads `PKG-00.toc`, PyInstaller's own record of what
+  went into the executable, which is the only witness a onefile build leaves
+  and is a better one than a directory listing: it says what was packed rather
+  than what happens to be lying beside the output. Cross-checked against the
+  old directory walk on the same build — 201 binaries either way.
+- **A step that writes no report now fails** instead of warning. An exit code
+  cannot distinguish a mistyped path from rows needing review; the presence of
+  the file can.
+- **The macOS bundle claimed to be 1.0.0** two releases after it was. Nothing
+  read `Info.plist` except Finder, so nothing noticed. A test holds it to the
+  version the program reports.
+
 ## [1.1.0] — 2026-09-19
 
 Alignment with the conventions the other six products in this family follow.

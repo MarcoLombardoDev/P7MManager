@@ -195,13 +195,35 @@ jobs:
       - name: Inventory what the bundle ships
         shell: bash
         run: |
+          report="build/licenses/THIRD-PARTY-LICENSES-${{ matrix.asset }}.md"
+
+          # PKG-00.toc, and not a directory. A onefile build leaves nothing on
+          # disk to walk -- the libraries are inside the executable and are
+          # unpacked to a temporary directory only while it runs -- so
+          # PyInstaller's own record of what it packed is the only witness
+          # there is. It is also the better one: it says what went in, rather
+          # than what happens to be lying beside the output.
+          #
+          # This used to read build/$APP_NAME, which is PyInstaller's work
+          # directory and has never held the collected libraries in either
+          # build shape. See the report check below for how that survived.
           set +e
           python tools/licence_inventory.py \
-            --bundle "${{ matrix.asset }}=build/$APP_NAME" \
+            --bundle "${{ matrix.asset }}=build/p7mmanager/PKG-00.toc" \
             --licences build/licenses \
-            --markdown "build/licenses/THIRD-PARTY-LICENSES-${{ matrix.asset }}.md"
+            --markdown "$report"
           status=$?
           set -e
+
+          # argparse exits 2 as well, and so does an inventory that wrote its
+          # report and wants a human to look at some rows. Those are not the
+          # same event and the case below cannot tell them apart, so a mistyped
+          # path arrived as a warning nobody reads. The file either exists or
+          # the step fails.
+          if [ ! -s "$report" ]; then
+            echo "::error::the inventory exited $status and wrote no report"
+            exit 1
+          fi
 
           # 2 means the report was written and some rows in it need a human.
           # Anything else means the script did not finish, and the archive
@@ -224,12 +246,15 @@ jobs:
           suffix=""
           [ "$RUNNER_OS" = "Windows" ] && suffix=".exe"
 
+          # A onefile build writes one file into dist/. macOS is the
+          # exception: BUNDLE wraps that same file in an .app, because
+          # double-clicking a bare Unix executable there opens a terminal.
           if [ "$RUNNER_OS" = "macOS" ] && [ -d "dist/$APP_NAME.app" ]; then
             payload="dist/$APP_NAME.app"
             bin="dist/$APP_NAME.app/Contents/MacOS/$APP_NAME"
           else
-            payload="dist/$APP_NAME"
-            bin="dist/$APP_NAME/$APP_NAME$suffix"
+            payload="dist/$APP_NAME$suffix"
+            bin="$payload"
           fi
 
           if [ ! -e "$payload" ]; then
@@ -292,15 +317,17 @@ jobs:
               ;;
           esac
 
-      # PyInstaller's COLLECT owns everything it writes -- a file dropped into
-      # dist/ before it runs is removed, and datas land under _internal/, which
-      # is exactly where a launcher must not be. The only place that can write
-      # next to the executable is the workflow, after COLLECT has finished.
+      # Everything a spec file declares as ``datas`` is packed inside the
+      # executable and unpacked into a temporary directory on each launch, so
+      # nothing put there is visible to whoever opens the archive. The
+      # launcher, the licence texts and the checksum are exactly the things
+      # that have to be visible, so the workflow writes them beside the
+      # executable after the build.
       #
-      # The folder is renamed to "P7M Manager" here, with the space: that is
-      # what someone sees after unpacking, and it is the product's name. The
-      # executable keeps the spaceless form, because it is also typed on a
-      # command line.
+      # The folder that holds them is called "P7M Manager" here, with the
+      # space: that is what someone sees after unpacking, and it is the
+      # product's name. The executable keeps the spaceless form, because it is
+      # also typed on a command line.
       #
       # The checksum written here is of the executable, and it travels in the
       # same archive. That catches a truncated download or a half-finished
@@ -318,27 +345,25 @@ jobs:
           root="dist/pkg/$FOLDER_NAME"
           mkdir -p dist/pkg
 
+          # The payload is one file on Windows and Linux and one .app on
+          # macOS, and in every case it moves *into* the folder rather than
+          # becoming it, so all three archives unpack to the same shape.
+          mkdir -p "$root"
+          mv "$PAYLOAD" "$root/"
+
           case "$RUNNER_OS" in
             Windows)
-              mv "$PAYLOAD" "$root"
               cp packaging/start.cmd "$root/start.cmd"
               named="$APP_NAME.exe"
               sums="$root/$APP_NAME.exe.sha256"
               ;;
             macOS)
-              # The payload is P7MManager.app, and a launcher does not belong
-              # inside somebody else's bundle. So the app moves into a folder
-              # of its own and the launcher sits beside it -- which also makes
-              # all three archives unpack to the same shape.
-              mkdir -p "$root"
-              mv "$PAYLOAD" "$root/"
               cp packaging/start.sh "$root/start.command"
               chmod +x "$root/start.command"
               named="$APP_NAME.app/Contents/MacOS/$APP_NAME"
               sums="$root/$APP_NAME.sha256"
               ;;
             *)
-              mv "$PAYLOAD" "$root"
               cp packaging/start.sh "$root/start.sh"
               chmod +x "$root/start.sh"
               named="$APP_NAME"
