@@ -208,8 +208,6 @@ def test_the_checksums_go_into_the_notes_and_not_the_download_list():
 def test_a_partial_list_of_checksums_is_never_written():
     """The notes job waits for all three builds; two of three is worse than
     none, because a reader cannot tell missing from unlisted."""
-    import re
-
     block = re.search(r"  checksums:\n(.*?)(?:\n  [a-z]|\Z)", WORKFLOW, re.S)
     assert block, "the checksums job is missing"
     assert "needs: [release, build]" in block.group(1)
